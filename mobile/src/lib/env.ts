@@ -14,5 +14,5 @@ function read(name: string, fallback?: string): string {
 export const ENV = {
   API_URL: read("EXPO_PUBLIC_API_URL", "http://localhost:3001"),
   SUPABASE_URL: read("EXPO_PUBLIC_SUPABASE_URL", ""),
-  SUPABASE_ANON_KEY: read("EXPO_PUBLIC_SUPABASE_ANON_KEY", ""),
+  SUPABASE_PUBLISHABLE_KEY: read("EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY", ""),
 };

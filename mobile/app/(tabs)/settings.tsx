@@ -1,14 +1,34 @@
-import { Alert, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/stores/auth";
 
 export default function SettingsScreen() {
   const profile = useAuthStore((s) => s.profile);
+  const resetAuth = useAuthStore((s) => s.reset);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [signingOut, setSigningOut] = useState(false);
 
   const onSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) Alert.alert("Sign out failed", error.message);
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      // Local scope: only this device's session is cleared, no /logout
+      // round-trip and no AuthSessionMissingError if the server already
+      // dropped the session.
+      const { error } = await supabase.auth.signOut({ scope: "local" });
+      if (error) console.warn("supabase.auth.signOut error", error);
+    } catch (err) {
+      console.warn("supabase.auth.signOut threw", err);
+    }
+    resetAuth();
+    queryClient.clear();
+    setSigningOut(false);
+    router.replace("/sign-in");
   };
 
   return (
@@ -33,9 +53,14 @@ export default function SettingsScreen() {
 
         <TouchableOpacity
           onPress={onSignOut}
+          disabled={signingOut}
           className="items-center rounded-2xl border border-danger/40 px-6 py-4"
         >
-          <Text className="text-base font-semibold text-danger">Sign out</Text>
+          {signingOut ? (
+            <ActivityIndicator color="#ff5c5c" />
+          ) : (
+            <Text className="text-base font-semibold text-danger">Sign out</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

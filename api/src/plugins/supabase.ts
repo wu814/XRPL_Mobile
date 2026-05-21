@@ -9,7 +9,7 @@ declare module "fastify" {
 }
 
 export const supabasePlugin = fp(async (app) => {
-  const client = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+  const client = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -17,5 +17,5 @@ export const supabasePlugin = fp(async (app) => {
   });
 
   app.decorate("supabase", client);
-  app.log.info("Supabase service-role client ready");
+  app.log.info("Supabase secret-key client ready");
 });

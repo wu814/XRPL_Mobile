@@ -4,7 +4,9 @@ These steps are manual. Run them once when bootstrapping a fresh Supabase projec
 
 ## 1. Create the project
 
-Sign in at https://supabase.com and create a new project. Pick the closest region. Save the **anon key**, **service role key**, **JWT secret**, and the project URL into the `api/.env` file (see `api/.env.example`).
+Sign in at https://supabase.com and create a new project. Pick the closest region. Save the **publishable key**, **secret key**, and the project URL into the `api/.env` file (see `api/.env.example`). Legacy dashboard labels “anon” / “service_role” map to publishable / secret — see [Supabase API keys](https://supabase.com/docs/guides/getting-started/api-keys).
+
+The API verifies user JWTs against the project's public JWKS endpoint (`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`), so no JWT signing secret is needed in `.env`. New Supabase projects (created on or after Oct 1, 2025) use asymmetric signing keys by default; older projects can migrate via **Project Settings -> JWT signing keys -> Migrate JWT secret**.
 
 ## 2. Apply the schema
 

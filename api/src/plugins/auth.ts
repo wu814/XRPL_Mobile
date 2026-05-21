@@ -1,7 +1,6 @@
 import fp from "fastify-plugin";
 import type { FastifyError, FastifyRequest } from "fastify";
-import { jwtVerify } from "jose";
-import { env } from "../lib/env.js";
+import { verifySupabaseJwt } from "../lib/jwt.js";
 
 export interface AuthUser {
   id: string;
@@ -29,18 +28,6 @@ class HttpError extends Error {
   }
 }
 
-const jwtSecret = new TextEncoder().encode(env.SUPABASE_JWT_SECRET);
-
-async function verifyJwt(token: string): Promise<{ sub: string; email?: string }> {
-  const { payload } = await jwtVerify(token, jwtSecret, {
-    algorithms: ["HS256"],
-  });
-  if (typeof payload.sub !== "string") {
-    throw new HttpError(401, "JWT missing sub claim");
-  }
-  return { sub: payload.sub, email: typeof payload.email === "string" ? payload.email : undefined };
-}
-
 export const authPlugin = fp(async (app) => {
   const requireAuth = async (req: FastifyRequest): Promise<AuthUser> => {
     if (req.authUser) return req.authUser;
@@ -53,7 +40,7 @@ export const authPlugin = fp(async (app) => {
 
     let claims: { sub: string; email?: string };
     try {
-      claims = await verifyJwt(token);
+      claims = await verifySupabaseJwt(token);
     } catch (err) {
       req.log.warn({ err: (err as Error).message }, "JWT verification failed");
       throw new HttpError(401, "Unauthorized");

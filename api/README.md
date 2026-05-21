@@ -6,7 +6,7 @@ Custodial XRPL Testnet backend. The mobile app talks only to this service via RE
 
 - **Fastify** + TypeScript (Node 20)
 - **`xrpl`** SDK (Testnet WebSocket)
-- **`@supabase/supabase-js`** (service role)
+- **`@supabase/supabase-js`** (secret key / elevated server client)
 - **`pgcrypto`** for encrypted seeds at rest
 - **Pino** structured logs
 

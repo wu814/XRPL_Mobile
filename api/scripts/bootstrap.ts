@@ -21,7 +21,7 @@ import {
 import { encryptSeed } from "../src/lib/crypto.js";
 
 async function main() {
-  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const client = new Client(env.XRPL_NETWORK);

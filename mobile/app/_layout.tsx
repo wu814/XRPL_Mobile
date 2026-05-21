@@ -20,32 +20,49 @@ function AuthBootstrapper() {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(async ({ data }) => {
+    const loadProfile = async (origin: string) => {
+      try {
+        const profile = await ensureProfile();
+        if (mounted) setProfile(profile);
+      } catch (ensureErr) {
+        console.warn(`[auth:${origin}] ensureProfile failed`, ensureErr);
+        try {
+          const profile = await getMe();
+          if (mounted) setProfile(profile);
+        } catch (meErr) {
+          console.warn(`[auth:${origin}] getMe failed`, meErr);
+        }
+      }
+    };
+
+    supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
       setSession(data.session);
-      if (data.session) {
-        try {
-          const profile = await ensureProfile().catch(() => getMe());
-          if (mounted) setProfile(profile);
-        } catch (err) {
-          console.warn("Failed to load profile", err);
-        }
-      }
       setLoading(false);
+      if (data.session) {
+        // Defer so loadProfile (which calls supabase.auth.getSession via the
+        // axios interceptor) doesn't re-enter while supabase is still holding
+        // its initial-session lock.
+        setTimeout(() => {
+          void loadProfile("bootstrap");
+        }, 0);
+      }
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // IMPORTANT: keep this callback SYNCHRONOUS and never await any supabase
+    // call (direct or via apiClient) inside it. Doing so deadlocks the
+    // auth-js internal lock and causes every subsequent supabase.auth.*
+    // call to hang forever. See supabase/auth-js#762.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[auth] state change:", event, session?.user?.id ?? "no-user");
       setSession(session);
-      if (session) {
-        try {
-          const profile = await ensureProfile().catch(() => getMe());
-          if (mounted) setProfile(profile);
-        } catch (err) {
-          console.warn("Failed to load profile", err);
-        }
-      } else {
+      if (!session) {
         setProfile(null);
+        return;
       }
+      setTimeout(() => {
+        void loadProfile(`event:${event}`);
+      }, 0);
     });
 
     return () => {
@@ -65,7 +82,7 @@ function AuthGate() {
 
   useEffect(() => {
     if (isLoading) return;
-    const inAuthGroup = segments[0] === "sign-in";
+    const inAuthGroup = segments[0] === "sign-in" || segments[0] === "auth-callback";
     if (!session && !inAuthGroup) {
       router.replace("/sign-in");
     } else if (session && inAuthGroup) {
@@ -90,6 +107,7 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+          <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
         </Stack>
         <StatusBar style="auto" />

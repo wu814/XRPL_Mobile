@@ -14,7 +14,7 @@ Custodial **XRPL Testnet** mobile app (React Native + Expo) backed by a containe
           | Supabase Auth (Google / Magic Link)   |          | xrpl SDK
           v                                       v          v
    +-------------+                       +----------------+  +-------------+
-   |  Supabase   |    service role       |  Supabase DB   |  |  XRPL       |
+   |  Supabase   |    secret key         |  Supabase DB   |  |  XRPL       |
    |  Auth       | <-------------------- |  (Postgres +   |  |  Testnet    |
    +-------------+                       |   pgcrypto)    |  +-------------+
                                          +----------------+
@@ -39,7 +39,7 @@ Custodial **XRPL Testnet** mobile app (React Native + Expo) backed by a containe
 ## Stack at a glance
 
 - **Mobile:** React Native (Expo) + Expo Router + TypeScript + NativeWind + TanStack Query + Zustand + react-hook-form + zod
-- **Backend:** Node 20 + Fastify + `xrpl` SDK + `@supabase/supabase-js` (service role) + Pino + zod + jose (JWT)
+- **Backend:** Node 20 + Fastify + `xrpl` SDK + `@supabase/supabase-js` (secret key) + Pino + zod + jose (JWT)
 - **Database:** Supabase Postgres (UUID schema, `pgcrypto`-encrypted seeds, RLS default-deny)
 - **Auth:** Supabase Auth (Google OAuth + Email Magic Link) + Expo SecureStore for JWT persistence
 - **Deploy:** Railway (Docker container for `api/`)

@@ -15,7 +15,7 @@ Custodial XRPL Testnet mobile client. Talks only to the [`api/`](../api/README.m
 
 ```bash
 cp .env.example .env
-# fill in EXPO_PUBLIC_API_URL, EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY
+# fill in EXPO_PUBLIC_API_URL, EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
 npm install
 npm run ios     # or `npm run android`

@@ -1,7 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { jwtVerify } from "jose";
 import { z } from "zod";
-import { env } from "../lib/env.js";
+import { verifySupabaseJwt } from "../lib/jwt.js";
 
 const usernameSchema = z
   .string()
@@ -12,8 +11,6 @@ const usernameSchema = z
 const profileBodySchema = z.object({
   username: usernameSchema.optional(),
 });
-
-const jwtSecret = new TextEncoder().encode(env.SUPABASE_JWT_SECRET);
 
 export async function authRoutes(app: FastifyInstance) {
   app.get("/me", async (req, reply) => {
@@ -37,11 +34,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     let claims: { sub: string; email?: string };
     try {
-      const { payload } = await jwtVerify(token, jwtSecret, { algorithms: ["HS256"] });
-      claims = {
-        sub: payload.sub as string,
-        email: typeof payload.email === "string" ? payload.email : undefined,
-      };
+      claims = await verifySupabaseJwt(token);
     } catch {
       return reply.status(401).send({ error: "Invalid token" });
     }

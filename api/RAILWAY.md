@@ -19,14 +19,15 @@ This service is containerized via [`Dockerfile`](./Dockerfile). Railway auto-det
    | `NODE_ENV` | `production` |
    | `LOG_LEVEL` | `info` |
    | `SUPABASE_URL` | Supabase Project Settings -> API |
-   | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Project Settings -> API |
-   | `SUPABASE_JWT_SECRET` | Supabase Project Settings -> API -> JWT Settings |
+   | `SUPABASE_SECRET_KEY` | Supabase Project Settings -> API (secret key) |
    | `SEED_ENCRYPTION_KEY` | `openssl rand -base64 48` |
    | `XRPL_NETWORK` | `wss://s.altnet.rippletest.net:51233` |
    | `XRPL_FAUCET_URL` | `https://faucet.altnet.rippletest.net/accounts` |
    | `CORS_ORIGINS` | Comma-separated list of allowed origins (Expo dev URL + production app URL) |
 
 7. Trigger a redeploy. Railway will run `docker build .` from `api/` then start the container with `node dist/server.js`.
+
+> JWTs from Supabase Auth are verified against the project's public JWKS endpoint (`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`), so no JWT signing secret needs to be stored in Railway. Rotating signing keys in the Supabase dashboard takes effect without a redeploy.
 
 ## Pointing the mobile app at Railway
 

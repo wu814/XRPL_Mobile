@@ -1,30 +1,25 @@
-import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /**
- * Adapter for Supabase storage; uses Expo SecureStore on device,
- * falls back to in-memory map for web/SSR.
+ * Storage adapter for Supabase auth sessions.
+ *
+ * We intentionally use AsyncStorage rather than Expo SecureStore: a Supabase
+ * session (JWT + refresh + user metadata) routinely exceeds SecureStore's
+ * 2048-byte limit, which made writes unreliable and broke sign-out.
+ *
+ * Tokens are still sandboxed per-app on iOS/Android. If we ever need at-rest
+ * encryption we can wrap this with `aes-js` + a SecureStore-held key, but
+ * doing so adds a polyfill dependency that has historically caused
+ * hard-to-debug hangs in React Native crypto code paths.
  */
-const memoryStore = new Map<string, string>();
-
 export const secureStorage = {
   async getItem(key: string): Promise<string | null> {
-    if (SecureStore.isAvailableAsync && (await SecureStore.isAvailableAsync())) {
-      return SecureStore.getItemAsync(key);
-    }
-    return memoryStore.get(key) ?? null;
+    return AsyncStorage.getItem(key);
   },
   async setItem(key: string, value: string): Promise<void> {
-    if (SecureStore.isAvailableAsync && (await SecureStore.isAvailableAsync())) {
-      await SecureStore.setItemAsync(key, value);
-      return;
-    }
-    memoryStore.set(key, value);
+    await AsyncStorage.setItem(key, value);
   },
   async removeItem(key: string): Promise<void> {
-    if (SecureStore.isAvailableAsync && (await SecureStore.isAvailableAsync())) {
-      await SecureStore.deleteItemAsync(key);
-      return;
-    }
-    memoryStore.delete(key);
+    await AsyncStorage.removeItem(key);
   },
 };
