@@ -58,3 +58,13 @@ npm run bootstrap
 ```
 
 This creates one issuer wallet and one treasury wallet via the XRPL Testnet faucet, encrypts their seeds, and inserts them into `wallets` with `wallet_type = 'issuer' | 'treasury'`.
+
+> **Note:** Admins can also create issuer, treasury, _and pathfind_ wallets from the mobile home screen via `POST /wallets` with `walletType: "issuer" | "treasury" | "pathfind"`. The endpoint funds the wallet and applies the appropriate XRPL flags automatically (matches the `xrpl_mvp` admin flow).
+
+## 7. Migrating existing projects
+
+If your Supabase project was created before pathfind support landed, re-run `schema.sql` (it's idempotent) or apply just the enum migration:
+
+```sql
+alter type wallet_type add value if not exists 'pathfind';
+```

@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Stack } from "expo-router";
 import { useWallets } from "@/src/hooks/useWallets";
 import { useBuyNFT, useMintAndListNFT, useNftsByAccount } from "@/src/hooks/useNft";
 import { shortAddress } from "@/src/lib/formatters";
@@ -52,6 +53,13 @@ export default function NftScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-black">
+      <Stack.Screen
+        options={{
+          title: "NFT",
+          headerStyle: { backgroundColor: "#000" },
+          headerTintColor: "#fff",
+        }}
+      />
       <ScrollView contentContainerClassName="px-6 py-6">
         <Text className="mb-1 text-3xl font-bold text-white">NFT</Text>
         <Text className="mb-6 text-white/60">Mint and trade XRPL NFTs (Testnet)</Text>
@@ -106,7 +114,9 @@ export default function NftScreen() {
         </View>
 
         <View className="mb-5 rounded-2xl border border-white/10 p-5">
-          <Text className="mb-3 text-sm uppercase tracking-wider text-white/50">Buy by offer ID</Text>
+          <Text className="mb-3 text-sm uppercase tracking-wider text-white/50">
+            Buy by offer ID
+          </Text>
           <TextInput
             value={offerID}
             onChangeText={setOfferID}

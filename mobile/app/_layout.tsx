@@ -1,3 +1,4 @@
+import "react-native-get-random-values";
 import "../global.css";
 import { useEffect } from "react";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
@@ -109,6 +110,9 @@ export default function RootLayout() {
           <Stack.Screen name="sign-in" options={{ headerShown: false }} />
           <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
+          <Stack.Screen name="advanced/amm" options={{ headerShown: true }} />
+          <Stack.Screen name="advanced/dex" options={{ headerShown: true }} />
+          <Stack.Screen name="advanced/nft" options={{ headerShown: true }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

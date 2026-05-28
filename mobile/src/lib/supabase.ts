@@ -28,5 +28,7 @@ export const supabase = createClient(ENV.SUPABASE_URL, ENV.SUPABASE_PUBLISHABLE_
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // Implicit flow works reliably in Expo Go (PKCE needs WebCrypto, which Expo Go lacks).
+    flowType: "implicit",
   },
 });

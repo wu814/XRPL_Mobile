@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Stack } from "expo-router";
 import { useWallets } from "@/src/hooks/useWallets";
 import { useCancelOffer, useCreateOffer, useUserOffers } from "@/src/hooks/useDex";
 import { shortAddress, xrpToDrops } from "@/src/lib/formatters";
@@ -16,7 +17,7 @@ import type { OfferKind } from "@/src/api/dex";
 
 const KINDS: OfferKind[] = ["limit", "ioc", "fok", "passive", "sell"];
 
-export default function TradeScreen() {
+export default function DexScreen() {
   const wallets = useWallets();
   const [selected, setSelected] = useState<string | null>(null);
   const walletAddress = selected ?? wallets.data?.[0]?.classic_address ?? null;
@@ -25,8 +26,8 @@ export default function TradeScreen() {
   const createMut = useCreateOffer();
   const cancelMut = useCancelOffer();
 
-  const [pays, setPays] = useState(""); // XRP amount the offerer wants
-  const [gets, setGets] = useState(""); // XRP amount the offerer gives
+  const [pays, setPays] = useState("");
+  const [gets, setGets] = useState("");
   const [kind, setKind] = useState<OfferKind>("limit");
 
   const onCreate = async () => {
@@ -51,8 +52,15 @@ export default function TradeScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-black">
+      <Stack.Screen
+        options={{
+          title: "DEX",
+          headerStyle: { backgroundColor: "#000" },
+          headerTintColor: "#fff",
+        }}
+      />
       <ScrollView contentContainerClassName="px-6 py-6">
-        <Text className="mb-1 text-3xl font-bold text-white">Trade</Text>
+        <Text className="mb-1 text-3xl font-bold text-white">DEX</Text>
         <Text className="mb-6 text-white/60">Place XRP/XRP test offers (DEX)</Text>
 
         <Text className="mb-2 text-sm uppercase tracking-wider text-white/50">Wallet</Text>
@@ -74,7 +82,9 @@ export default function TradeScreen() {
         </ScrollView>
 
         <View className="mb-5 rounded-2xl border border-white/10 p-5">
-          <Text className="mb-3 text-sm uppercase tracking-wider text-white/50">New offer (XRP for XRP)</Text>
+          <Text className="mb-3 text-sm uppercase tracking-wider text-white/50">
+            New offer (XRP for XRP)
+          </Text>
 
           <Text className="mb-1 text-xs text-white/60">You give (XRP)</Text>
           <TextInput
@@ -130,15 +140,20 @@ export default function TradeScreen() {
             <View key={String(o.seq)} className="mb-3 rounded-2xl border border-white/10 p-4">
               <Text className="mb-1 text-white">Seq #{o.seq}</Text>
               <Text className="mb-1 text-xs text-white/60">
-                Taker pays {typeof o.taker_pays === "string" ? `${Number(o.taker_pays) / 1_000_000} XRP` : `${o.taker_pays.value} ${o.taker_pays.currency}`}
+                Taker pays{" "}
+                {typeof o.taker_pays === "string"
+                  ? `${Number(o.taker_pays) / 1_000_000} XRP`
+                  : `${o.taker_pays.value} ${o.taker_pays.currency}`}
               </Text>
               <Text className="mb-2 text-xs text-white/60">
-                Taker gets {typeof o.taker_gets === "string" ? `${Number(o.taker_gets) / 1_000_000} XRP` : `${o.taker_gets.value} ${o.taker_gets.currency}`}
+                Taker gets{" "}
+                {typeof o.taker_gets === "string"
+                  ? `${Number(o.taker_gets) / 1_000_000} XRP`
+                  : `${o.taker_gets.value} ${o.taker_gets.currency}`}
               </Text>
               <TouchableOpacity
                 onPress={() =>
-                  walletAddress &&
-                  cancelMut.mutate({ walletAddress, sequence: Number(o.seq) })
+                  walletAddress && cancelMut.mutate({ walletAddress, sequence: Number(o.seq) })
                 }
                 className="self-start rounded-full border border-danger/50 px-3 py-1"
               >

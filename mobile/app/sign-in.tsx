@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
 import { supabase } from "@/src/lib/supabase";
+import { createSessionFromUrl, getOAuthRedirectUri } from "@/src/lib/authSession";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -13,8 +13,9 @@ export default function SignIn() {
 
   const onGoogle = async () => {
     setBusy("google");
+    let redirectTo = "";
     try {
-      const redirectTo = Linking.createURL("/auth-callback");
+      redirectTo = getOAuthRedirectUri();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo, skipBrowserRedirect: true },
@@ -22,20 +23,34 @@ export default function SignIn() {
       if (error) throw error;
       if (!data?.url) throw new Error("No OAuth URL returned");
 
+      // Debug: confirm Supabase received our redirect_to param.
+      try {
+        const supabaseRedirect = new URL(data.url).searchParams.get("redirect_to");
+        console.log("[oauth] supabase redirect_to =", supabaseRedirect);
+      } catch {
+        console.log("[oauth] could not parse supabase oauth url");
+      }
+
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      console.log("[oauth] auth session result =", result.type, result.type === "success" ? result.url : "");
+
       if (result.type !== "success" || !result.url) {
-        throw new Error("OAuth was cancelled");
+        throw new Error(
+          result.type === "cancel"
+            ? "OAuth was cancelled"
+            : `OAuth failed (${result.type}). Safari "invalid address" usually means Supabase Site URL is wrong or redirect URLs are not saved as separate entries.`,
+        );
       }
-      const url = new URL(result.url);
-      const params = new URLSearchParams(url.hash.replace(/^#/, ""));
-      const access_token = params.get("access_token");
-      const refresh_token = params.get("refresh_token");
-      if (!access_token || !refresh_token) {
-        throw new Error("Missing tokens in OAuth callback");
-      }
-      await supabase.auth.setSession({ access_token, refresh_token });
+
+      await createSessionFromUrl(result.url);
     } catch (err) {
-      Alert.alert("Sign in failed", (err as Error).message);
+      const message = (err as Error).message;
+      Alert.alert(
+        "Sign in failed",
+        redirectTo
+          ? `${message}\n\nAdd this exact URL to Supabase → Authentication → Redirect URLs:\n${redirectTo}`
+          : message,
+      );
     } finally {
       setBusy(null);
     }
@@ -48,7 +63,7 @@ export default function SignIn() {
     }
     setBusy("magic");
     try {
-      const redirectTo = Linking.createURL("/auth-callback");
+      const redirectTo = getOAuthRedirectUri();
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: redirectTo },

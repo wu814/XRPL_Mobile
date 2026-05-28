@@ -3,7 +3,7 @@ import { apiClient } from "../lib/api/client";
 export interface AdminWalletRow {
   id: string;
   classic_address: string;
-  wallet_type: "user" | "issuer" | "treasury";
+  wallet_type: "user" | "issuer" | "treasury" | "pathfind";
   user_id: string | null;
   created_at: string;
 }

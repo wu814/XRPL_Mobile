@@ -15,8 +15,13 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type wallet_type as enum ('user', 'issuer', 'treasury');
+  create type wallet_type as enum ('user', 'issuer', 'treasury', 'pathfind');
 exception when duplicate_object then null; end $$;
+
+-- Add 'pathfind' to existing wallet_type enum (idempotent).
+do $$ begin
+  alter type wallet_type add value if not exists 'pathfind';
+exception when others then null; end $$;
 
 do $$ begin
   create type friend_request_status as enum ('pending', 'accepted', 'declined');

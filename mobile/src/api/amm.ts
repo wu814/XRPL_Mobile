@@ -34,6 +34,29 @@ export async function getAmm(account: string) {
   return data;
 }
 
+export interface CreateAmmInput {
+  treasuryAddress: string;
+  issuerAddress: string;
+  currency1: string;
+  value1: number;
+  currency2: string;
+  value2: number;
+  tradingFee?: number;
+}
+
+export async function createAmm(input: CreateAmmInput) {
+  const { data } = await apiClient.post("/amm", input);
+  return data as { account: string; currency1: string; currency2: string };
+}
+
+export async function getAmmInfoByCurrencies(input: {
+  sellCurrency: string;
+  buyCurrency: string;
+}): Promise<AmmInfo> {
+  const { data } = await apiClient.post<AmmInfo>("/amm/info-by-currencies", input);
+  return data;
+}
+
 export async function addLiquidity(input: {
   account: string;
   walletAddress: string;

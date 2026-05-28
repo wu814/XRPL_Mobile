@@ -54,6 +54,30 @@ export async function ammRoutes(app: FastifyInstance) {
     return data ?? [];
   });
 
+  app.post("/info-by-currencies", async (req) => {
+    await app.requireAuth(req);
+    const body = z
+      .object({ sellCurrency: z.string().min(3), buyCurrency: z.string().min(3) })
+      .safeParse(req.body ?? {});
+    if (!body.success) throw new HttpError(400, "Invalid body");
+
+    const { sellCurrency, buyCurrency } = body.data;
+    const { data: rows } = await app.supabase
+      .from("amms")
+      .select("account, currency1, currency2");
+    const match = (rows ?? []).find(
+      (r) =>
+        (r.currency1 === sellCurrency && r.currency2 === buyCurrency) ||
+        (r.currency1 === buyCurrency && r.currency2 === sellCurrency),
+    );
+    if (!match) throw new HttpError(404, `No AMM pool found for ${sellCurrency}/${buyCurrency}`);
+
+    const client = await app.ensureXrplConnected();
+    const info = await getFormattedAMMInfo(client, match.account as string);
+    if (!info) throw new HttpError(404, "AMM not found");
+    return info;
+  });
+
   app.get("/:account", async (req) => {
     await app.requireAuth(req);
     const params = z.object({ account: z.string().min(25) }).safeParse(req.params);

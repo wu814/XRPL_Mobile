@@ -5,12 +5,9 @@ import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useAuthStore } from "@/src/stores/auth";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const role = useAuthStore((s) => s.profile?.role);
-  const isAdmin = role === "ADMIN";
 
   return (
     <Tabs
@@ -28,24 +25,21 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="trade"
+        name="advanced"
         options={{
-          title: "Trade",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="arrow.left.arrow.right" color={color} />,
+          title: "Advanced",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="square.grid.2x2.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="amm"
+        name="transactions"
         options={{
-          title: "AMM",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="drop.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="nft"
-        options={{
-          title: "NFT",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="photo.fill" color={color} />,
+          title: "Transactions",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="list.bullet.rectangle.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -60,14 +54,6 @@ export default function TabLayout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="admin"
-        options={{
-          title: "Admin",
-          href: isAdmin ? "/admin" : null,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="hammer.fill" color={color} />,
         }}
       />
     </Tabs>
