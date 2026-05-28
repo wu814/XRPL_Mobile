@@ -12,13 +12,13 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   useSendCrossCurrency,
   useSendIou,
   useSendXrp,
 } from "@/src/hooks/useTransactions";
-import { adminIssue, adminWallets } from "@/src/api/admin";
+import { adminWallets } from "@/src/api/admin";
 import { getAmmInfoByCurrencies, listAmms, type AmmInfo } from "@/src/api/amm";
 import { useAuthStore } from "@/src/stores/auth";
 import { CurrencySelectorSheet } from "./CurrencySelectorSheet";
@@ -69,7 +69,6 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
   const sendXrpMut = useSendXrp();
   const sendIouMut = useSendIou();
   const sendCrossMut = useSendCrossCurrency();
-  const adminIssueMut = useMutation({ mutationFn: adminIssue });
 
   const adminWalletsQuery = useQuery({
     queryKey: ["admin", "wallets"],
@@ -83,7 +82,6 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
   });
 
   const issuer = adminWalletsQuery.data?.find((w) => w.wallet_type === "issuer");
-  const treasury = adminWalletsQuery.data?.find((w) => w.wallet_type === "treasury");
 
   // Live AMM lookup for convertable mode.
   const [ammInfo, setAmmInfo] = useState<AmmInfo | null>(null);
@@ -205,33 +203,25 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
     const tag = destinationTag.trim() ? Number(destinationTag.trim()) : undefined;
 
     try {
-      // Admin → issuing IOU through treasury (matches xrpl_mvp Send-as-admin behaviour).
+      // Admin → send the IOU from the selected wallet (mirrors xrpl_mvp: the
+      // issuer wallet mints new tokens, the treasury wallet distributes them).
       if (isAdmin && directCurrency !== "XRP") {
-        if (!treasury || !issuer) {
+        const issuerAddr = issuerAddressForCurrency(directCurrency);
+        if (!issuerAddr) {
           return Alert.alert(
-            "Bootstrap required",
-            "Treasury / issuer wallets are not set up. Create them from the home screen.",
+            "Issuer unknown",
+            `No issuer found for ${directCurrency}. Ask an admin to bootstrap or create an AMM first.`,
           );
         }
-        if (recipientMode === "address") {
-          await adminIssueMut.mutateAsync({
-            treasuryAddress: treasury.classic_address,
-            destinationAddress: recipient,
-            currency: directCurrency,
-            issuerAddress: issuer.classic_address,
-            value: amt.toString(),
-          });
-        } else {
-          // Username path: resolve via SendIOU's destinationUsername handler
-          // (server resolves the username to the latest wallet).
-          await sendIouMut.mutateAsync({
-            walletAddress: treasury.classic_address,
-            destinationUsername: recipient,
-            currency: directCurrency,
-            issuer: issuer.classic_address,
-            value: amt.toString(),
-          });
-        }
+        await sendIouMut.mutateAsync({
+          walletAddress,
+          ...(recipientMode === "username"
+            ? { destinationUsername: recipient }
+            : { destination: recipient }),
+          currency: directCurrency,
+          issuer: issuerAddr,
+          value: amt.toString(),
+        });
       } else if (directCurrency === "XRP") {
         await sendXrpMut.mutateAsync({
           walletAddress,
@@ -323,7 +313,6 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
   const isPending =
     sendXrpMut.isPending ||
     sendIouMut.isPending ||
-    adminIssueMut.isPending ||
     sendCrossMut.isPending;
 
   const canSendDirect = !!recipient && !!directAmount;

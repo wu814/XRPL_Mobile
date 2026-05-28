@@ -19,6 +19,11 @@ export async function authorizeDeposit(
 
   if (!isTypedTransactionSuccessful(result)) {
     const err = handleTransactionError(result, "authorizeDeposit");
+    if (err.code === "tecDUPLICATE") {
+      return {
+        message: `DepositPreauth already exists for ${authorizedAddress} on ${wallet.classicAddress}`,
+      };
+    }
     throw new Error(err.message);
   }
 

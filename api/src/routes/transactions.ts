@@ -6,6 +6,7 @@ import { sendXRP } from "../services/xrpl/transaction/sendXRP.js";
 import { sendIOU } from "../services/xrpl/transaction/sendIOU.js";
 import { sendCrossCurrency } from "../services/xrpl/transaction/sendCrossCurrency.js";
 import { getAccountTransactions } from "../services/xrpl/transaction/getAccountTransactions.js";
+import { clawback } from "../services/xrpl/transaction/clawback.js";
 
 const sendXrpBody = z.object({
   walletAddress: z.string().min(25),
@@ -48,6 +49,13 @@ async function resolveRecipient(
   if (!walletRow) throw new HttpError(404, "Recipient has no wallet");
   return walletRow.classic_address as string;
 }
+
+const clawbackBody = z.object({
+  issuerAddress: z.string().min(25),
+  currency: z.string().min(3),
+  holderAddress: z.string().min(25),
+  value: z.string(),
+});
 
 const crossCurrencyBody = z.object({
   walletAddress: z.string().min(25),
@@ -130,6 +138,22 @@ export async function transactionRoutes(app: FastifyInstance) {
       issuer: parse.data.issuer,
       value: parse.data.value,
     });
+  });
+
+  app.post("/clawback", async (req) => {
+    await app.requireAdmin(req);
+    const parse = clawbackBody.safeParse(req.body ?? {});
+    if (!parse.success) throw new HttpError(400, "Invalid body");
+
+    const client = await app.ensureXrplConnected();
+    const { wallet } = await loadWalletByAddress(app.supabase, parse.data.issuerAddress);
+    return clawback(
+      client,
+      wallet,
+      parse.data.currency,
+      parse.data.holderAddress,
+      parse.data.value,
+    );
   });
 
   app.post("/cross-currency", async (req) => {

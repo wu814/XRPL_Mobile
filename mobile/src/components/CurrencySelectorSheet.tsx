@@ -9,6 +9,7 @@ interface CurrencySelectorSheetProps {
   onSelect: (currency: string) => void;
   exclude?: string;
   selected?: string;
+  disabledIds?: string[];
 }
 
 export function CurrencySelectorSheet({
@@ -17,6 +18,7 @@ export function CurrencySelectorSheet({
   onSelect,
   exclude,
   selected,
+  disabledIds,
 }: CurrencySelectorSheetProps) {
   return (
     <Modal
@@ -39,18 +41,28 @@ export function CurrencySelectorSheet({
             .filter((c) => c.id !== exclude)
             .map((c) => {
               const isSelected = selected === c.id;
+              const isDisabled = disabledIds?.includes(c.id) ?? false;
               return (
                 <TouchableOpacity
                   key={c.id}
+                  disabled={isDisabled}
                   onPress={() => onSelect(c.id)}
-                  className={`mb-2 flex-row items-center rounded-2xl border p-4 ${isSelected ? "border-primary bg-primary/10" : "border-white/10 bg-white/5"}`}
+                  className={`mb-2 flex-row items-center rounded-2xl border p-4 ${
+                    isDisabled
+                      ? "border-white/5 bg-white/[0.02] opacity-40"
+                      : isSelected
+                        ? "border-primary bg-primary/10"
+                        : "border-white/10 bg-white/5"
+                  }`}
                 >
                   <CurrencyIconImage currency={c.id} size={32} />
                   <View className="ml-3 flex-1">
                     <Text className="text-base font-semibold text-white">{c.id}</Text>
-                    <Text className="text-xs text-white/60">{c.name}</Text>
+                    <Text className="text-xs text-white/60">
+                      {isDisabled ? "Not available" : c.name}
+                    </Text>
                   </View>
-                  {isSelected ? <Text className="text-primary">✓</Text> : null}
+                  {isSelected && !isDisabled ? <Text className="text-primary">✓</Text> : null}
                 </TouchableOpacity>
               );
             })}

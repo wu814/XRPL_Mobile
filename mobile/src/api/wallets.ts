@@ -40,9 +40,30 @@ export interface WalletByUsername {
   wallet_type: string;
 }
 
+export interface IssuerWallet {
+  classic_address: string;
+  wallet_type: string;
+}
+
+export async function getIssuerWallets(): Promise<IssuerWallet[]> {
+  const { data } = await apiClient.get<IssuerWallet[]>("/wallets/issuers");
+  return data;
+}
+
 export async function getWalletByUsername(username: string): Promise<WalletByUsername> {
   const { data } = await apiClient.get<WalletByUsername>(
     `/wallets/by-username/${encodeURIComponent(username)}`,
+  );
+  return data;
+}
+
+export async function authorizeDeposit(input: {
+  walletAddress: string;
+  authorizedAddress: string;
+}): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>(
+    `/wallets/${input.walletAddress}/authorize-deposit`,
+    { authorizedAddress: input.authorizedAddress },
   );
   return data;
 }

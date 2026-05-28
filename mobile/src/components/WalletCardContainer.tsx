@@ -27,12 +27,6 @@ export function WalletCardContainer({ wallet, onTransfer }: WalletCardContainerP
       balance={assets.summary}
       isLoading={assets.isLoading}
       onTransfer={() => onTransfer(wallet)}
-      onSetTrustline={() =>
-        Alert.alert(
-          "Set Trustline",
-          "Trustline management is coming soon. For now, ask an admin to authorize trustlines on the issuer.",
-        )
-      }
       onDelete={onDelete}
     />
   );

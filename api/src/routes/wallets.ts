@@ -46,6 +46,20 @@ export async function walletRoutes(app: FastifyInstance) {
     return data ?? [];
   });
 
+  // Issuer wallets are system-level and shared across all users (a single
+  // issuer issues every token). Any authenticated user can resolve the issuer
+  // address so they can set trustlines without an admin.
+  app.get("/issuers", async (req) => {
+    await app.requireAuth(req);
+    const { data, error } = await app.supabase
+      .from("wallets")
+      .select("classic_address, wallet_type")
+      .eq("wallet_type", "issuer")
+      .order("created_at", { ascending: true });
+    if (error) throw new HttpError(500, error.message);
+    return data ?? [];
+  });
+
   app.get("/by-username/:username", async (req) => {
     await app.requireAuth(req);
     const params = z

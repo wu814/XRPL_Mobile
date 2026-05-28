@@ -6,6 +6,7 @@ import { transactionRoutes } from "./transactions.js";
 import { dexRoutes } from "./dex.js";
 import { ammRoutes } from "./amm.js";
 import { nftRoutes } from "./nft.js";
+import { oracleRoutes } from "./oracle.js";
 import { friendRoutes } from "./friends.js";
 import { adminRoutes } from "./admin.js";
 
@@ -17,6 +18,7 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(dexRoutes, { prefix: "/dex" });
   await app.register(ammRoutes, { prefix: "/amm" });
   await app.register(nftRoutes, { prefix: "/nft" });
+  await app.register(oracleRoutes, { prefix: "/oracle" });
   await app.register(friendRoutes, { prefix: "/friends" });
   await app.register(adminRoutes, { prefix: "/admin" });
 }

@@ -6,39 +6,30 @@ import { useAuthStore } from "@/src/stores/auth";
 import { formatBalance } from "@/src/lib/prices";
 import type { WalletSummary } from "@/src/api/wallets";
 import type { WalletBalanceSummary } from "@/src/hooks/useWalletAssets";
+import {
+  WalletActionSheet,
+  WALLET_ACTION_TITLES,
+  type WalletActionKey,
+} from "./WalletActionSheet";
 
 interface WalletSummaryCardProps {
   wallet: WalletSummary;
   balance: WalletBalanceSummary;
   isLoading: boolean;
   onTransfer: () => void;
-  onSetTrustline?: () => void;
   onDelete?: () => void;
 }
 
-function actionsForType(walletType: WalletSummary["wallet_type"]) {
+function actionsForType(walletType: WalletSummary["wallet_type"]): WalletActionKey[] {
   switch (walletType) {
     case "issuer":
-      return [
-        { label: "Authorize Deposit", placeholder: "Allows trusted senders to deposit IOUs into the issuer." },
-        { label: "Authorize Trustline", placeholder: "Authorize a user's trustline so they can hold issued tokens." },
-        { label: "Clawback", placeholder: "Revoke previously issued IOUs from a holder." },
-        { label: "Deep Freeze", placeholder: "Deep freeze a trustline." },
-      ];
+      return ["authorize_deposit", "authorize_trustline", "clawback", "deep_freeze"];
     case "treasury":
-      return [
-        { label: "Set Trustline", placeholder: "Add a trustline so the treasury can hold an issued token." },
-        { label: "Authorize Deposit", placeholder: "Allow a sender to deposit IOUs into the treasury." },
-        { label: "Manage Oracle", placeholder: "Configure XRPL oracle entries for price feeds." },
-      ];
+      return ["set_trustline", "authorize_deposit", "manage_oracle"];
     case "pathfind":
-      return [
-        { label: "Set Trustline", placeholder: "Add a trustline so this wallet can route through additional currencies." },
-      ];
+      return ["set_trustline"];
     default:
-      return [
-        { label: "Set Trustline", placeholder: "Trustline management is coming soon." },
-      ];
+      return ["set_trustline"];
   }
 }
 
@@ -47,13 +38,13 @@ export function WalletSummaryCard({
   balance,
   isLoading,
   onTransfer,
-  onSetTrustline,
   onDelete,
 }: WalletSummaryCardProps) {
   const router = useRouter();
   const role = useAuthStore((s) => s.profile?.role);
   const username = useAuthStore((s) => s.profile?.username);
   const [showDetails, setShowDetails] = useState(false);
+  const [activeAction, setActiveAction] = useState<WalletActionKey | null>(null);
 
   const isAdmin = role === "ADMIN";
   const isSystemWallet = wallet.wallet_type !== "user";
@@ -111,15 +102,11 @@ export function WalletSummaryCard({
         </TouchableOpacity>
         {typeActions.map((a) => (
           <TouchableOpacity
-            key={a.label}
-            onPress={() =>
-              a.label === "Set Trustline" && onSetTrustline
-                ? onSetTrustline()
-                : Alert.alert(a.label, a.placeholder)
-            }
+            key={a}
+            onPress={() => setActiveAction(a)}
             className="mr-2 mb-2 rounded-full border border-white/15 px-4 py-2"
           >
-            <Text className="text-xs text-white">{a.label}</Text>
+            <Text className="text-xs text-white">{WALLET_ACTION_TITLES[a]}</Text>
           </TouchableOpacity>
         ))}
         <TouchableOpacity
@@ -146,6 +133,13 @@ export function WalletSummaryCard({
           </TouchableOpacity>
         ) : null}
       </View>
+
+      <WalletActionSheet
+        visible={activeAction !== null}
+        action={activeAction}
+        wallet={wallet}
+        onClose={() => setActiveAction(null)}
+      />
 
       <Modal
         visible={showDetails}

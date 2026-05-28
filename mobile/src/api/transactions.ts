@@ -59,6 +59,16 @@ export async function sendIou(input: {
   return data as { hash: string };
 }
 
+export async function clawback(input: {
+  issuerAddress: string;
+  currency: string;
+  holderAddress: string;
+  value: string;
+}) {
+  const { data } = await apiClient.post("/transactions/clawback", input);
+  return data as { hash: string };
+}
+
 export type CrossCurrencyMode = "exact_input" | "exact_output";
 
 export async function sendCrossCurrency(input: {

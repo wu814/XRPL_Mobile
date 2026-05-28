@@ -83,12 +83,6 @@ function UserHome() {
             balance={assetsState.summary}
             isLoading={assetsState.isLoading}
             onTransfer={() => setShowSend(true)}
-            onSetTrustline={() =>
-              Alert.alert(
-                "Set Trustline",
-                "Trustline management is coming soon. For now, ask an admin to authorize trustlines on the issuer.",
-              )
-            }
           />
         ) : (
           <NoWalletCard onCreate={onCreate} isCreating={createMutation.isPending} />
