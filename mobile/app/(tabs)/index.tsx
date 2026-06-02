@@ -137,6 +137,28 @@ function AdminHome() {
   const [showSend, setShowSend] = useState(false);
   const [sendingFrom, setSendingFrom] = useState<WalletSummary | null>(null);
 
+  const portfolioWallets = useMemo(
+    () =>
+      adminWallets.filter(
+        (w) =>
+          w.wallet_type === "issuer" ||
+          w.wallet_type === "treasury" ||
+          w.wallet_type === "pathfind",
+      ),
+    [adminWallets],
+  );
+
+  const assetsByWallet = useMemo(() => {
+    const map = new Map<string, typeof aggregate.assets>();
+    for (const wallet of portfolioWallets) {
+      map.set(
+        wallet.classic_address,
+        aggregate.assets.filter((a) => a.walletAddress === wallet.classic_address),
+      );
+    }
+    return map;
+  }, [portfolioWallets, aggregate.assets]);
+
   const treasury = adminWallets.find((w) => w.wallet_type === "treasury");
   const defaultSendWallet = sendingFrom ?? treasury ?? adminWallets[0] ?? null;
 
@@ -188,7 +210,19 @@ function AdminHome() {
         )}
 
         <Text className="mb-3 mt-8 text-xl font-bold text-white">Portfolio</Text>
-        <AssetTable assets={aggregate.assets} loading={aggregate.isLoading} />
+        {portfolioWallets.length === 0 ? (
+          <AssetTable assets={[]} loading={aggregate.isLoading} />
+        ) : (
+          portfolioWallets.map((wallet) => (
+            <View key={wallet.id} className="mb-6">
+              <AssetTable
+                title={wallet.wallet_type.toUpperCase()}
+                assets={assetsByWallet.get(wallet.classic_address) ?? []}
+                loading={aggregate.isLoading}
+              />
+            </View>
+          ))
+        )}
       </ScrollView>
 
       <StickyActions

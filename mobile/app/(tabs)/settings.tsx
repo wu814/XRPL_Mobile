@@ -3,7 +3,7 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/src/lib/supabase";
+import { signOutLocally } from "@/src/lib/authSession";
 import { useAuthStore } from "@/src/stores/auth";
 
 export default function SettingsScreen() {
@@ -17,18 +17,16 @@ export default function SettingsScreen() {
     if (signingOut) return;
     setSigningOut(true);
     try {
-      // Local scope: only this device's session is cleared, no /logout
-      // round-trip and no AuthSessionMissingError if the server already
-      // dropped the session.
-      const { error } = await supabase.auth.signOut({ scope: "local" });
-      if (error) console.warn("supabase.auth.signOut error", error);
+      await queryClient.cancelQueries();
+      await signOutLocally();
     } catch (err) {
-      console.warn("supabase.auth.signOut threw", err);
+      console.warn("[auth] sign out failed", err);
+    } finally {
+      resetAuth();
+      queryClient.clear();
+      setSigningOut(false);
+      router.replace("/sign-in");
     }
-    resetAuth();
-    queryClient.clear();
-    setSigningOut(false);
-    router.replace("/sign-in");
   };
 
   return (

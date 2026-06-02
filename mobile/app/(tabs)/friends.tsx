@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  useAddFavorite,
   useFavorites,
   useFriendRequests,
   useFriends,
@@ -19,6 +18,7 @@ import {
   useRespondRequest,
   useSendRequest,
 } from "@/src/hooks/useFriends";
+import { FavoriteStarButton } from "@/src/components/FavoriteStarButton";
 
 type Tab = "friends" | "requests" | "favorites";
 
@@ -32,7 +32,6 @@ export default function FriendsScreen() {
   const sendMut = useSendRequest();
   const respondMut = useRespondRequest();
   const removeMut = useRemoveFriend();
-  const addFavMut = useAddFavorite();
   const removeFavMut = useRemoveFavorite();
 
   const onSend = async () => {
@@ -41,17 +40,6 @@ export default function FriendsScreen() {
       await sendMut.mutateAsync(username);
       setUsername("");
       Alert.alert("Friend request sent");
-    } catch (err) {
-      Alert.alert("Failed", (err as Error).message);
-    }
-  };
-
-  const onAddFavorite = async () => {
-    if (!username) return;
-    try {
-      await addFavMut.mutateAsync(username);
-      setUsername("");
-      Alert.alert("Added to favorites");
     } catch (err) {
       Alert.alert("Failed", (err as Error).message);
     }
@@ -75,32 +63,32 @@ export default function FriendsScreen() {
           ))}
         </View>
 
-        <View className="mb-6 rounded-2xl border border-white/10 p-5">
-          <Text className="mb-2 text-xs uppercase tracking-wider text-white/50">
-            {tab === "favorites" ? "Add to favorites" : "Send friend request"}
-          </Text>
-          <TextInput
-            value={username}
-            onChangeText={setUsername}
-            placeholder="username"
-            placeholderTextColor="#666"
-            autoCapitalize="none"
-            className="mb-3 rounded-xl border border-white/15 px-3 py-2 text-white"
-          />
-          <TouchableOpacity
-            onPress={tab === "favorites" ? onAddFavorite : onSend}
-            disabled={sendMut.isPending || addFavMut.isPending}
-            className="items-center rounded-2xl bg-primary py-3"
-          >
-            {sendMut.isPending || addFavMut.isPending ? (
-              <ActivityIndicator />
-            ) : (
-              <Text className="text-base font-semibold text-black">
-                {tab === "favorites" ? "Add favorite" : "Send request"}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        {tab === "friends" ? (
+          <View className="mb-6 rounded-2xl border border-white/10 p-5">
+            <Text className="mb-2 text-xs uppercase tracking-wider text-white/50">
+              Send friend request
+            </Text>
+            <TextInput
+              value={username}
+              onChangeText={setUsername}
+              placeholder="username"
+              placeholderTextColor="#666"
+              autoCapitalize="none"
+              className="mb-3 rounded-xl border border-white/15 px-3 py-2 text-white"
+            />
+            <TouchableOpacity
+              onPress={onSend}
+              disabled={sendMut.isPending}
+              className="items-center rounded-2xl bg-primary py-3"
+            >
+              {sendMut.isPending ? (
+                <ActivityIndicator />
+              ) : (
+                <Text className="text-base font-semibold text-black">Send request</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         {tab === "friends" &&
           (friends.isLoading ? (
@@ -111,16 +99,19 @@ export default function FriendsScreen() {
                 key={f.id}
                 className="mb-3 flex-row items-center justify-between rounded-2xl border border-white/10 p-4"
               >
-                <View>
+                <View className="flex-1">
                   <Text className="text-base text-white">{f.username ?? "(no username)"}</Text>
                   <Text className="text-xs text-white/50">{f.email}</Text>
                 </View>
-                <TouchableOpacity
-                  onPress={() => removeMut.mutate(f.id)}
-                  className="rounded-full border border-danger/40 px-3 py-1"
-                >
-                  <Text className="text-xs text-danger">Remove</Text>
-                </TouchableOpacity>
+                <View className="flex-row items-center">
+                  <FavoriteStarButton friendUsername={f.username} />
+                  <TouchableOpacity
+                    onPress={() => removeMut.mutate(f.id)}
+                    className="rounded-full border border-danger/40 px-3 py-1"
+                  >
+                    <Text className="text-xs text-danger">Remove</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))
           ) : (

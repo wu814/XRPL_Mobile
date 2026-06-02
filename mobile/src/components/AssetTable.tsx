@@ -8,6 +8,7 @@ import type { WalletAsset } from "@/src/hooks/useWalletAssets";
 interface AssetTableProps {
   assets: WalletAsset[];
   loading?: boolean;
+  title?: string;
 }
 
 function isLpToken(asset: WalletAsset): boolean {
@@ -21,7 +22,7 @@ function displayName(asset: WalletAsset): string {
   return asset.currency;
 }
 
-export function AssetTable({ assets, loading }: AssetTableProps) {
+export function AssetTable({ assets, loading, title = "Assets" }: AssetTableProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => {
@@ -36,7 +37,7 @@ export function AssetTable({ assets, loading }: AssetTableProps) {
   return (
     <View className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
       <View className="flex-row items-center justify-between border-b border-white/10 px-4 py-3">
-        <Text className="text-base font-bold text-white">Assets</Text>
+        <Text className="text-base font-bold text-white">{title}</Text>
         <Text className="text-base font-bold text-white">USD Values</Text>
       </View>
 
