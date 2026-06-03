@@ -1,5 +1,5 @@
 import { Alert } from "react-native";
-import { WalletSummaryCard } from "./WalletSummaryCard";
+import { WalletSummaryCard } from "@/src/features/wallet/WalletSummaryCard";
 import { useWalletAssets } from "@/src/hooks/useWalletAssets";
 import { useDeleteWallet } from "@/src/hooks/useWallets";
 import type { WalletSummary } from "@/src/api/wallets";

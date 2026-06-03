@@ -2,23 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useMutation } from "@tanstack/react-query";
 import { ammSwap, getAmmInfoByCurrencies, type AmmInfo } from "@/src/api/amm";
 import { availableCurrencies } from "@/src/lib/currencyIcon";
-import { CurrencyIconImage } from "@/src/components/CurrencyIconImage";
+import { AppSheet } from "@/src/components/ui/AppSheet";
+import { CurrencyIconImage } from "@/src/features/shared/CurrencyIconImage";
 import { calculateEstimateOutput, calculateExactAMMInput } from "@/src/lib/ammCalculations";
 import { formatBalance } from "@/src/lib/prices";
-import { CurrencySelectorSheet } from "@/src/components/CurrencySelectorSheet";
+import { CurrencySelectorSheet } from "@/src/features/payments/CurrencySelectorSheet";
 
 interface SmartTradeSheetProps {
   visible: boolean;
@@ -172,32 +168,20 @@ export function SmartTradeSheet({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      onRequestClose={onClose}
-      presentationStyle="pageSheet"
-    >
-      <SafeAreaView className="flex-1 bg-black">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1"
-        >
-          <View className="border-b border-white/10 px-6 py-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-xl font-bold text-white">Smart Trade / Payment</Text>
-              <TouchableOpacity onPress={onClose}>
-                <Text className="text-white/60">Close</Text>
-              </TouchableOpacity>
-            </View>
-            <View className="mt-4 flex-row rounded-full bg-white/10 p-1">
-              <View className="flex-1 items-center rounded-full bg-primary/20 py-2">
-                <Text className="text-sm font-semibold text-primary">Convert</Text>
-              </View>
+    <>
+      <AppSheet
+        visible={visible}
+        onClose={onClose}
+        title="Smart Trade / Payment"
+        keyboardAvoiding
+        headerExtra={
+          <View className="mt-4 flex-row rounded-full bg-white/10 p-1">
+            <View className="flex-1 items-center rounded-full bg-primary/20 py-2">
+              <Text className="text-sm font-semibold text-primary">Convert</Text>
             </View>
           </View>
-
-          <ScrollView contentContainerClassName="px-6 py-5">
+        }
+      >
             {loadingAmm ? (
               <View className="mb-4 flex-row items-center rounded-full border border-blue-500/40 bg-blue-900/20 px-3 py-2">
                 <ActivityIndicator color="#60a5fa" />
@@ -294,21 +278,19 @@ export function SmartTradeSheet({
                 </Text>
               )}
             </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
+      </AppSheet>
 
-        <CurrencySelectorSheet
-          visible={pickerFor !== null}
-          onClose={() => setPickerFor(null)}
-          exclude={pickerFor === "sell" ? buyCurrency : sellCurrency}
-          onSelect={(c) => {
-            if (pickerFor === "sell") setSellCurrency(c);
-            else if (pickerFor === "buy") setBuyCurrency(c);
-            setPickerFor(null);
-          }}
-        />
-      </SafeAreaView>
-    </Modal>
+      <CurrencySelectorSheet
+        visible={pickerFor !== null}
+        onClose={() => setPickerFor(null)}
+        exclude={pickerFor === "sell" ? buyCurrency : sellCurrency}
+        onSelect={(c) => {
+          if (pickerFor === "sell") setSellCurrency(c);
+          else if (pickerFor === "buy") setBuyCurrency(c);
+          setPickerFor(null);
+        }}
+      />
+    </>
   );
 }
 

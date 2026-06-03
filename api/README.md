@@ -64,14 +64,14 @@ Production deploy uses this Dockerfile on **[Railway](https://railway.app)** —
 | `GET` | `/auth/me` | Current profile |
 | `POST` | `/auth/profile` | Idempotent profile creation after first sign-in |
 | `GET` | `/auth/check-username` | Username availability |
-| `GET / POST / DELETE` | `/wallets[/...]` | List, create, delete, info, lines, objects, flags, authorize-deposit |
+| `GET / POST / DELETE` | `/wallets[/...]` | List, create, delete, info, lines, authorize-deposit |
 | `POST` | `/trustlines` | Set trustline |
 | `POST` | `/transactions/xrp \| /iou` | Direct payments |
 | `POST / GET / DELETE` | `/dex/offers[/...]` | DEX offer create / cancel / list / book |
 | `GET / POST / DELETE` | `/amm[/...]` | AMM list / create / info / liquidity / swap |
 | `POST / GET` | `/nft[/...]` | Mint-and-list / buy / by-account |
 | `GET / POST / DELETE` | `/friends[/...]` | Friend graph + favorites |
-| `POST / GET` | `/admin[/...]` | Wallets list, one-shot issuer/treasury setup, issue, fund, promote (ADMIN only) |
+| `POST / GET` | `/admin[/...]` | Wallets list, one-shot issuer/treasury setup, issue, promote (ADMIN only) |
 
 ## Custody disclaimer
 

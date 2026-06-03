@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { Wallet } from "xrpl";
 import { HttpError } from "../plugins/auth.js";
 import { loadWalletByAddress } from "../services/xrpl/wallet/loadWallet.js";
 import { createWallet } from "../services/xrpl/wallet/createWallet.js";
@@ -17,10 +16,6 @@ const issueBody = z.object({
   currency: z.string().min(3),
   issuerAddress: z.string().min(25),
   value: z.string(),
-});
-
-const fundBody = z.object({
-  walletAddress: z.string().min(25).optional(),
 });
 
 const promoteBody = z.object({
@@ -97,30 +92,6 @@ export async function adminRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post("/fund-wallet", async (req) => {
-    await app.requireAdmin(req);
-    const parse = fundBody.safeParse(req.body ?? {});
-    if (!parse.success) throw new HttpError(400, "Invalid body");
-
-    const client = await app.ensureXrplConnected();
-
-    if (!parse.data.walletAddress) {
-      const fund = await client.fundWallet();
-      return {
-        address: fund.wallet.classicAddress,
-        balanceXrp: Number(fund.balance),
-        ephemeral: true,
-      };
-    }
-
-    const { wallet } = await loadWalletByAddress(app.supabase, parse.data.walletAddress);
-    const fund = await client.fundWallet(wallet);
-    return {
-      address: wallet.classicAddress,
-      balanceXrp: Number(fund.balance),
-    };
-  });
-
   app.post("/promote", async (req) => {
     await app.requireAdmin(req);
     const parse = promoteBody.safeParse(req.body ?? {});
@@ -133,5 +104,3 @@ export async function adminRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 }
-
-void Wallet;

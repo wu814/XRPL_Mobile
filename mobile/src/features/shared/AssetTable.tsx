@@ -3,7 +3,7 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { CurrencyIconImage, LpTokenIcon } from "./CurrencyIconImage";
 import { formatBalance, formatUsd } from "@/src/lib/prices";
 import { shortAddress } from "@/src/lib/formatters";
-import type { WalletAsset } from "@/src/hooks/useWalletAssets";
+import type { WalletAsset } from "@/src/lib/walletAssets";
 import { useLpPairCurrencies } from "@/src/hooks/useLpPairCurrencies";
 
 interface AssetTableProps {

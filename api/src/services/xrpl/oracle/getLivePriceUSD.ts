@@ -4,7 +4,7 @@ import { staticPriceUSD } from "../../../lib/prices.js";
 
 const ORACLE_DOCUMENT_ID = 1;
 
-export interface LivePriceResult {
+interface LivePriceResult {
   available: boolean;
   price: number;
   source: "oracle" | "static" | "none";

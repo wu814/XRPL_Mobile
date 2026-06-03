@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { Alert, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
+import { AppSheet } from "@/src/components/ui/AppSheet";
 import { useAuthStore } from "@/src/stores/auth";
 import { formatBalance } from "@/src/lib/prices";
 import type { WalletSummary } from "@/src/api/wallets";
-import type { WalletBalanceSummary } from "@/src/hooks/useWalletAssets";
+import type { WalletBalanceSummary } from "@/src/lib/walletAssets";
 import {
   WalletActionSheet,
   WALLET_ACTION_TITLES,
   type WalletActionKey,
-} from "./WalletActionSheet";
+} from "@/src/features/wallet/WalletActionSheet";
 
 interface WalletSummaryCardProps {
   wallet: WalletSummary;
@@ -141,20 +141,12 @@ export function WalletSummaryCard({
         onClose={() => setActiveAction(null)}
       />
 
-      <Modal
+      <AppSheet
         visible={showDetails}
-        animationType="slide"
-        onRequestClose={() => setShowDetails(false)}
-        presentationStyle="pageSheet"
+        onClose={() => setShowDetails(false)}
+        title="Wallet Details"
       >
-        <SafeAreaView className="flex-1 bg-black">
-          <View className="border-b border-white/10 px-6 py-4 flex-row items-center justify-between">
-            <Text className="text-xl font-bold text-white">Wallet Details</Text>
-            <TouchableOpacity onPress={() => setShowDetails(false)}>
-              <Text className="text-white/60">Close</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView contentContainerClassName="px-6 py-5">
+          <View>
             <Text className="mb-1 text-xs uppercase tracking-wider text-white/50">Address</Text>
             <Text className="mb-4 font-mono text-sm text-white">{wallet.classic_address}</Text>
             <Text className="mb-1 text-xs uppercase tracking-wider text-white/50">Type</Text>
@@ -181,9 +173,8 @@ export function WalletSummaryCard({
             >
               <Text className="text-sm text-white">Open trustline view</Text>
             </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+          </View>
+      </AppSheet>
     </View>
   );
 }

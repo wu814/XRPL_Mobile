@@ -1,11 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { createWallet } from "../services/xrpl/wallet/createWallet.js";
-import {
-  getAccountInfo,
-  getAccountLines,
-  getAccountObjects,
-} from "../services/xrpl/wallet/getWalletInfo.js";
+import { getAccountInfo, getAccountLines } from "../services/xrpl/wallet/getWalletInfo.js";
 import { authorizeDeposit } from "../services/xrpl/wallet/authorizeDeposit.js";
 import {
   setIssuerWalletFlags,
@@ -179,35 +175,6 @@ export async function walletRoutes(app: FastifyInstance) {
 
     const client = await app.ensureXrplConnected();
     return getAccountLines(client, params.data.address);
-  });
-
-  app.get("/:address/objects", async (req) => {
-    await app.requireAuth(req);
-    const params = addressParam.safeParse(req.params);
-    if (!params.success) throw new HttpError(400, "Invalid address");
-
-    const client = await app.ensureXrplConnected();
-    return getAccountObjects(client, params.data.address);
-  });
-
-  app.post("/:address/flags", async (req) => {
-    const user = await app.requireAuth(req);
-    const params = addressParam.safeParse(req.params);
-    if (!params.success) throw new HttpError(400, "Invalid address");
-
-    const body = z.object({ preset: z.enum(["issuer", "treasury"]) }).safeParse(req.body ?? {});
-    if (!body.success) throw new HttpError(400, "Invalid preset");
-
-    if (user.role !== "ADMIN") throw new HttpError(403, "Admin only for setting flags");
-
-    const client = await app.ensureXrplConnected();
-    const { wallet } = await loadWalletByAddress(app.supabase, params.data.address);
-    const result =
-      body.data.preset === "issuer"
-        ? await setIssuerWalletFlags(client, wallet)
-        : await setTreasuryWalletFlags(client, wallet);
-    if (!result.success) throw new HttpError(400, result.message ?? "Failed to set flags");
-    return result;
   });
 
   app.post("/:address/authorize-deposit", async (req) => {

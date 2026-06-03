@@ -7,7 +7,7 @@ const TF_CLEAR_FREEZE = 0x00200000;
 const TF_SET_DEEP_FREEZE = 0x00400000;
 const TF_CLEAR_DEEP_FREEZE = 0x00800000;
 
-export type FreezeMode = "freeze" | "deep_freeze" | "unfreeze";
+type FreezeMode = "freeze" | "deep_freeze" | "unfreeze";
 
 /**
  * Freeze / deep-freeze / unfreeze a holder's trustline from the issuer side.

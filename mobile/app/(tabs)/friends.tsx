@@ -18,7 +18,7 @@ import {
   useRespondRequest,
   useSendRequest,
 } from "@/src/hooks/useFriends";
-import { FavoriteStarButton } from "@/src/components/FavoriteStarButton";
+import { FavoriteStarButton } from "@/src/features/shared/FavoriteStarButton";
 
 type Tab = "friends" | "requests" | "favorites";
 

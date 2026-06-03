@@ -2,16 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { listAmms } from "@/src/api/amm";
 import {
@@ -28,8 +23,9 @@ import {
   useSetOracle,
   useSetTrustline,
 } from "@/src/hooks/useWalletActions";
-import { CurrencySelectorSheet } from "./CurrencySelectorSheet";
-import { CurrencyIconImage } from "./CurrencyIconImage";
+import { AppSheet } from "@/src/components/ui/AppSheet";
+import { CurrencySelectorList } from "@/src/features/payments/CurrencySelectorSheet";
+import { CurrencyIconImage } from "@/src/features/shared/CurrencyIconImage";
 import type { FreezeMode, SetTrustlineResult } from "@/src/api/trustlines";
 
 export type WalletActionKey =
@@ -140,8 +136,11 @@ export function WalletActionSheet({
 
   const close = () => {
     reset();
+    setShowCurrencyPicker(false);
     onClose();
   };
+
+  const dismissCurrencyPicker = () => setShowCurrencyPicker(false);
 
   const resolveCounterparty = async (): Promise<string> => {
     if (action === "authorize_deposit" || action === "authorize_trustline") {
@@ -297,28 +296,23 @@ export function WalletActionSheet({
     action === "deep_freeze";
 
   return (
-    <Modal
+    <AppSheet
       visible={visible}
-      animationType="slide"
-      onRequestClose={close}
-      presentationStyle="pageSheet"
+      onClose={showCurrencyPicker ? dismissCurrencyPicker : close}
+      title={showCurrencyPicker ? "Select Currency" : title}
+      keyboardAvoiding={!showCurrencyPicker}
     >
-      <SafeAreaView className="flex-1 bg-black">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1"
-        >
-          <View className="border-b border-white/10 px-6 py-4 flex-row items-center justify-between">
-            <Text className="text-xl font-bold text-white">{title}</Text>
-            <TouchableOpacity onPress={close}>
-              <Text className="text-white/60">Close</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            contentContainerClassName="px-6 py-5"
-            keyboardShouldPersistTaps="handled"
-          >
+      {showCurrencyPicker ? (
+        <CurrencySelectorList
+          selected={currency}
+          disabledIds={["XRP"]}
+          onSelect={(c) => {
+            setCurrency(c);
+            setShowCurrencyPicker(false);
+          }}
+        />
+      ) : (
+        <>
             <Text className="mb-4 text-xs text-white/40">{descriptionFor(action)}</Text>
 
             {action !== "set_trustline" ? (
@@ -494,21 +488,9 @@ export function WalletActionSheet({
                 <Text className="text-base font-semibold text-black">{submitLabel(action, oracleMode)}</Text>
               )}
             </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
-
-        <CurrencySelectorSheet
-          visible={showCurrencyPicker}
-          onClose={() => setShowCurrencyPicker(false)}
-          selected={currency}
-          disabledIds={["XRP"]}
-          onSelect={(c) => {
-            setCurrency(c);
-            setShowCurrencyPicker(false);
-          }}
-        />
-      </SafeAreaView>
-    </Modal>
+        </>
+      )}
+    </AppSheet>
   );
 }
 

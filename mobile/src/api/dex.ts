@@ -1,6 +1,12 @@
 import { apiClient } from "../lib/api/client";
 
-export type OfferKind = "limit" | "ioc" | "fok" | "passive" | "sell";
+export type OfferExecution = "gtc" | "ioc" | "fok";
+
+export interface OfferFlags {
+  execution: OfferExecution;
+  passive?: boolean;
+  sell?: boolean;
+}
 
 export interface XrpAmount {
   /** Drops as decimal string */
@@ -17,7 +23,9 @@ export interface CreateOfferRequest {
   walletAddress: string;
   takerPays: Amount;
   takerGets: Amount;
-  kind?: OfferKind;
+  execution?: OfferExecution;
+  passive?: boolean;
+  sell?: boolean;
 }
 
 export async function createOffer(req: CreateOfferRequest) {

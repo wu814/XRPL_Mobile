@@ -1,53 +1,77 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { useWallets } from "@/src/hooks/useWallets";
-import { useCancelOffer, useCreateOffer, useUserOffers } from "@/src/hooks/useDex";
-import { shortAddress, xrpToDrops } from "@/src/lib/formatters";
-import type { OfferKind } from "@/src/api/dex";
-
-const KINDS: OfferKind[] = ["limit", "ioc", "fok", "passive", "sell"];
+import { useDexOrderBook } from "@/src/hooks/useDex";
+import { getIssuerWallets } from "@/src/api/wallets";
+import { shortAddress } from "@/src/lib/formatters";
+import type { DexCurrencyPair } from "@/src/lib/dex";
+import { DEFAULT_DEX_PAIR } from "@/src/lib/dex";
+import { DexPlaceOrder } from "@/src/features/dex/DexPlaceOrder";
+import { DexOrderBook } from "@/src/features/dex/DexOrderBook";
+import { DexOrdersPanel } from "@/src/features/dex/DexOrdersPanel";
+import { useAuthStore } from "@/src/stores/auth";
 
 export default function DexScreen() {
+  const isAdmin = useAuthStore((s) => s.profile?.role) === "ADMIN";
   const wallets = useWallets();
+  const issuers = useQuery({ queryKey: ["wallets", "issuers"], queryFn: getIssuerWallets });
+
   const [selected, setSelected] = useState<string | null>(null);
-  const walletAddress = selected ?? wallets.data?.[0]?.classic_address ?? null;
 
-  const offers = useUserOffers(walletAddress ?? undefined);
-  const createMut = useCreateOffer();
-  const cancelMut = useCancelOffer();
+  const tradeWallets = useMemo(
+    () =>
+      (wallets.data ?? []).filter(
+        (w) => w.wallet_type === "user" || w.wallet_type === "pathfind",
+      ),
+    [wallets.data],
+  );
 
-  const [pays, setPays] = useState("");
-  const [gets, setGets] = useState("");
-  const [kind, setKind] = useState<OfferKind>("limit");
+  const walletOptions = tradeWallets.length ? tradeWallets : wallets.data ?? [];
 
-  const onCreate = async () => {
-    if (!walletAddress) return Alert.alert("Pick a wallet first");
-    const paysNum = Number(pays);
-    const getsNum = Number(gets);
-    if (!paysNum || !getsNum) return Alert.alert("Enter both XRP amounts");
-    try {
-      await createMut.mutateAsync({
-        walletAddress,
-        takerPays: xrpToDrops(paysNum),
-        takerGets: xrpToDrops(getsNum),
-        kind,
-      });
-      setPays("");
-      setGets("");
-      Alert.alert("Offer submitted");
-    } catch (err) {
-      Alert.alert("Offer failed", (err as Error).message);
+  const defaultWalletAddress = useMemo(() => {
+    if (isAdmin) {
+      const pathfind = walletOptions.find((w) => w.wallet_type === "pathfind");
+      if (pathfind) return pathfind.classic_address;
     }
+    return walletOptions[0]?.classic_address ?? null;
+  }, [isAdmin, walletOptions]);
+
+  useEffect(() => {
+    if (!defaultWalletAddress) {
+      setSelected(null);
+      return;
+    }
+    const stillValid =
+      selected != null && walletOptions.some((w) => w.classic_address === selected);
+    if (!stillValid) setSelected(defaultWalletAddress);
+  }, [defaultWalletAddress, selected, walletOptions]);
+
+  const walletAddress = selected ?? defaultWalletAddress;
+
+  const [baseCurrency, setBaseCurrency] = useState(DEFAULT_DEX_PAIR.base);
+  const [quoteCurrency, setQuoteCurrency] = useState(DEFAULT_DEX_PAIR.quote);
+
+  const issuerAddress = issuers.data?.[0]?.classic_address ?? "";
+
+  const pair: DexCurrencyPair | null = useMemo(() => {
+    if (!issuerAddress || baseCurrency === quoteCurrency) return null;
+    return { base: baseCurrency, quote: quoteCurrency, issuerAddress };
+  }, [baseCurrency, quoteCurrency, issuerAddress]);
+
+  const book = useDexOrderBook(pair);
+
+  const onPairChange = (base: string, quote: string) => {
+    setBaseCurrency(base);
+    setQuoteCurrency(quote);
   };
 
   return (
@@ -59,13 +83,29 @@ export default function DexScreen() {
           headerTintColor: "#fff",
         }}
       />
-      <ScrollView contentContainerClassName="px-6 py-6">
-        <Text className="mb-1 text-3xl font-bold text-white">DEX</Text>
-        <Text className="mb-6 text-white/60">Place XRP/XRP test offers (DEX)</Text>
 
-        <Text className="mb-2 text-sm uppercase tracking-wider text-white/50">Wallet</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-5">
-          {(wallets.data ?? []).map((w) => {
+      <ScrollView contentContainerClassName="px-4 pb-8 pt-4" keyboardShouldPersistTaps="handled">
+        <View className="mb-1 flex-row items-baseline justify-between">
+          <Text className="text-2xl font-bold text-white">
+            {baseCurrency}-{quoteCurrency}
+          </Text>
+          {book.sellOffers.length + book.buyOffers.length > 0 && !book.isLoading && (
+            <Text className="text-xs text-white/50">Testnet order book</Text>
+          )}
+        </View>
+        <Text className="mb-4 text-sm text-white/55">Limit orders on the XRPL DEX</Text>
+
+        {!issuerAddress && !issuers.isLoading && (
+          <View className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+            <Text className="text-xs text-amber-200">
+              Create an issuer wallet (admin Home → Create Wallet) before trading IOU pairs.
+            </Text>
+          </View>
+        )}
+
+        <Text className="mb-2 text-xs uppercase tracking-wider text-white/50">Wallet</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+          {walletOptions.map((w) => {
             const isSelected = walletAddress === w.classic_address;
             return (
               <TouchableOpacity
@@ -81,89 +121,31 @@ export default function DexScreen() {
           })}
         </ScrollView>
 
-        <View className="mb-5 rounded-2xl border border-white/10 p-5">
-          <Text className="mb-3 text-sm uppercase tracking-wider text-white/50">
-            New offer (XRP for XRP)
-          </Text>
-
-          <Text className="mb-1 text-xs text-white/60">You give (XRP)</Text>
-          <TextInput
-            value={gets}
-            onChangeText={setGets}
-            keyboardType="decimal-pad"
-            placeholder="0.0"
-            placeholderTextColor="#666"
-            className="mb-3 rounded-xl border border-white/15 px-3 py-2 text-white"
+        {/* Trade row: place order (left) + order book (right) — matches xrpl_mvp / screenshot layout */}
+        <View className="mb-2 min-h-[340px] flex-row gap-2">
+          <DexPlaceOrder
+            walletAddress={walletAddress}
+            pair={pair}
+            onPairChange={onPairChange}
           />
-
-          <Text className="mb-1 text-xs text-white/60">You receive (XRP)</Text>
-          <TextInput
-            value={pays}
-            onChangeText={setPays}
-            keyboardType="decimal-pad"
-            placeholder="0.0"
-            placeholderTextColor="#666"
-            className="mb-3 rounded-xl border border-white/15 px-3 py-2 text-white"
-          />
-
-          <Text className="mb-1 text-xs text-white/60">Type</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-            {KINDS.map((k) => (
-              <TouchableOpacity
-                key={k}
-                onPress={() => setKind(k)}
-                className={`mr-2 rounded-full px-3 py-2 ${kind === k ? "bg-accent" : "border border-white/20"}`}
-              >
-                <Text className={`text-xs ${kind === k ? "text-black" : "text-white"}`}>{k}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <TouchableOpacity
-            onPress={onCreate}
-            disabled={createMut.isPending}
-            className="items-center rounded-2xl bg-primary py-3"
-          >
-            {createMut.isPending ? (
-              <ActivityIndicator />
-            ) : (
-              <Text className="text-base font-semibold text-black">Submit offer</Text>
-            )}
-          </TouchableOpacity>
+          {issuers.isLoading ? (
+            <View className="flex-1 items-center justify-center rounded-2xl border border-white/10">
+              <ActivityIndicator color="#8EDFE2" />
+            </View>
+          ) : (
+            <DexOrderBook
+              baseCurrency={baseCurrency}
+              quoteCurrency={quoteCurrency}
+              sellOffers={book.sellOffers}
+              buyOffers={book.buyOffers}
+              isLoading={book.isLoading}
+              isRefreshing={book.isRefreshing}
+              onRefresh={book.refetch}
+            />
+          )}
         </View>
 
-        <Text className="mb-3 text-lg font-semibold text-white">Your active offers</Text>
-        {offers.isLoading ? (
-          <ActivityIndicator />
-        ) : offers.data && offers.data.length > 0 ? (
-          (offers.data as any[]).map((o) => (
-            <View key={String(o.seq)} className="mb-3 rounded-2xl border border-white/10 p-4">
-              <Text className="mb-1 text-white">Seq #{o.seq}</Text>
-              <Text className="mb-1 text-xs text-white/60">
-                Taker pays{" "}
-                {typeof o.taker_pays === "string"
-                  ? `${Number(o.taker_pays) / 1_000_000} XRP`
-                  : `${o.taker_pays.value} ${o.taker_pays.currency}`}
-              </Text>
-              <Text className="mb-2 text-xs text-white/60">
-                Taker gets{" "}
-                {typeof o.taker_gets === "string"
-                  ? `${Number(o.taker_gets) / 1_000_000} XRP`
-                  : `${o.taker_gets.value} ${o.taker_gets.currency}`}
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  walletAddress && cancelMut.mutate({ walletAddress, sequence: Number(o.seq) })
-                }
-                className="self-start rounded-full border border-danger/50 px-3 py-1"
-              >
-                <Text className="text-xs text-danger">Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          ))
-        ) : (
-          <Text className="text-white/50">No active offers</Text>
-        )}
+        <DexOrdersPanel walletAddress={walletAddress} />
       </ScrollView>
     </SafeAreaView>
   );

@@ -4,12 +4,12 @@
  * balances shown in the UI. Used as a fallback when no on-chain price oracle
  * is available.
  */
-export interface StaticPrice {
+interface StaticPrice {
   baseAsset: string;
   price: number;
 }
 
-export const STATIC_PRICES: StaticPrice[] = [
+const STATIC_PRICES: StaticPrice[] = [
   { baseAsset: "USD", price: 1 },
   { baseAsset: "XRP", price: 1.34 },
   { baseAsset: "EUR", price: 1.16 },

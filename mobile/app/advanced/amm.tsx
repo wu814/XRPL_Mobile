@@ -16,11 +16,11 @@ import { Stack, useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAmms, ammKeys } from "@/src/hooks/useAmm";
 import { createAmm } from "@/src/api/amm";
-import { adminWallets } from "@/src/api/admin";
+import { useAdminWallets } from "@/src/hooks/useAdminWallets";
 import { decodeCurrency, shortAddress } from "@/src/lib/formatters";
 import { useAuthStore } from "@/src/stores/auth";
 import { availableCurrencies } from "@/src/lib/currencyIcon";
-import { CurrencyIconImage } from "@/src/components/CurrencyIconImage";
+import { CurrencyIconImage } from "@/src/features/shared/CurrencyIconImage";
 
 export default function AmmListScreen() {
   const router = useRouter();
@@ -98,11 +98,7 @@ export default function AmmListScreen() {
 
 function CreateAmmModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const qc = useQueryClient();
-  const adminWalletsQuery = useQuery({
-    queryKey: ["admin", "wallets"],
-    queryFn: adminWallets,
-    enabled: visible,
-  });
+  const adminWalletsQuery = useAdminWallets(visible);
 
   const treasury = adminWalletsQuery.data?.find((w) => w.wallet_type === "treasury");
   const issuer = adminWalletsQuery.data?.find((w) => w.wallet_type === "issuer");

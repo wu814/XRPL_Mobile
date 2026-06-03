@@ -18,7 +18,7 @@ import {
   dropsToXrp,
 } from "xrpl";
 
-export interface ProcessedTransaction {
+interface ProcessedTransaction {
   hash: string;
   ledger_index: number | null;
   date: string | null;
@@ -32,7 +32,7 @@ export interface ProcessedTransaction {
   result: string;
 }
 
-export interface GetAccountTransactionsResult {
+interface GetAccountTransactionsResult {
   transactions: ProcessedTransaction[];
   marker: string | null;
   message?: string;

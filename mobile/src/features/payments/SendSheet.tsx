@@ -2,27 +2,23 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import {
   useSendCrossCurrency,
   useSendIou,
   useSendXrp,
 } from "@/src/hooks/useTransactions";
-import { adminWallets } from "@/src/api/admin";
+import { useAdminWallets } from "@/src/hooks/useAdminWallets";
 import { getAmmInfoByCurrencies, listAmms, type AmmInfo } from "@/src/api/amm";
 import { useAuthStore } from "@/src/stores/auth";
-import { CurrencySelectorSheet } from "./CurrencySelectorSheet";
-import { CurrencyIconImage } from "./CurrencyIconImage";
+import { AppSheet } from "@/src/components/ui/AppSheet";
+import { CurrencySelectorSheet } from "@/src/features/payments/CurrencySelectorSheet";
+import { CurrencyIconImage } from "@/src/features/shared/CurrencyIconImage";
 import {
   calculateEstimateOutput,
   calculateExactAMMInput,
@@ -70,11 +66,7 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
   const sendIouMut = useSendIou();
   const sendCrossMut = useSendCrossCurrency();
 
-  const adminWalletsQuery = useQuery({
-    queryKey: ["admin", "wallets"],
-    queryFn: adminWallets,
-    enabled: isAdmin && visible,
-  });
+  const adminWalletsQuery = useAdminWallets(isAdmin && visible);
   const ammListQuery = useQuery({
     queryKey: ["amm", "list"],
     queryFn: listAmms,
@@ -322,38 +314,23 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
     (Number(sendAmount) > 0 || Number(receiveAmount) > 0);
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      onRequestClose={onClose}
-      presentationStyle="pageSheet"
-    >
-      <SafeAreaView className="flex-1 bg-black">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1"
-        >
-          <View className="border-b border-white/10 px-6 py-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-xl font-bold text-white">Send</Text>
-              <TouchableOpacity onPress={onClose}>
-                <Text className="text-white/60">Close</Text>
-              </TouchableOpacity>
-            </View>
-            <SegmentedControl
-              value={paymentMode}
-              onChange={(v) => setPaymentMode(v as PaymentMode)}
-              options={[
-                { id: "direct", label: "Direct" },
-                { id: "convertable", label: "Convertable" },
-              ]}
-            />
-          </View>
-
-          <ScrollView
-            contentContainerClassName="px-6 py-5"
-            keyboardShouldPersistTaps="handled"
-          >
+    <>
+      <AppSheet
+        visible={visible}
+        onClose={onClose}
+        title="Send"
+        keyboardAvoiding
+        headerExtra={
+          <SegmentedControl
+            value={paymentMode}
+            onChange={(v) => setPaymentMode(v as PaymentMode)}
+            options={[
+              { id: "direct", label: "Direct" },
+              { id: "convertable", label: "Convertable" },
+            ]}
+          />
+        }
+      >
             <Text className="mb-3 text-xs text-white/40">
               {paymentMode === "direct"
                 ? "Trustline-to-trustline payment"
@@ -455,28 +432,26 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
                 </Text>
               )}
             </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
+      </AppSheet>
 
-        <CurrencySelectorSheet
-          visible={pickerFor !== null}
-          onClose={() => setPickerFor(null)}
-          exclude={
-            pickerFor === "send"
-              ? receiveCurrency
-              : pickerFor === "receive"
-                ? sendCurrency
-                : undefined
-          }
-          onSelect={(c) => {
-            if (pickerFor === "direct") setDirectCurrency(c);
-            else if (pickerFor === "send") setSendCurrency(c);
-            else if (pickerFor === "receive") setReceiveCurrency(c);
-            setPickerFor(null);
-          }}
-        />
-      </SafeAreaView>
-    </Modal>
+      <CurrencySelectorSheet
+        visible={pickerFor !== null}
+        onClose={() => setPickerFor(null)}
+        exclude={
+          pickerFor === "send"
+            ? receiveCurrency
+            : pickerFor === "receive"
+              ? sendCurrency
+              : undefined
+        }
+        onSelect={(c) => {
+          if (pickerFor === "direct") setDirectCurrency(c);
+          else if (pickerFor === "send") setSendCurrency(c);
+          else if (pickerFor === "receive") setReceiveCurrency(c);
+          setPickerFor(null);
+        }}
+      />
+    </>
   );
 }
 

@@ -27,26 +27,29 @@ When running against a remote API (e.g. Railway), set `EXPO_PUBLIC_API_URL` to t
 
 ```
 mobile/
-  app/
-    _layout.tsx                     # Auth gate + QueryClient + theme
-    sign-in.tsx                     # Google + Magic Link
+  app/                          # Expo Router screens (thin — import from src/features)
+    _layout.tsx                 # Auth gate + QueryClient + theme
+    sign-in.tsx
     (tabs)/
-      _layout.tsx                   # Bottom tabs
-      index.tsx                     # Home (wallets list)
-      trade.tsx, amm.tsx, nft.tsx, friends.tsx, settings.tsx, admin.tsx
-    wallet/[address].tsx            # Wallet detail
-    amm/[account].tsx               # AMM pool detail
+      index.tsx                 # re-exports HomeScreen
+      advanced.tsx              # links to DEX / AMM / NFT under app/advanced/
+      transactions.tsx, friends.tsx, settings.tsx
+    advanced/                   # dex.tsx, amm.tsx, nft.tsx
+    wallet/[address].tsx
+    amm/[account].tsx
   src/
-    api/                            # Axios + endpoint wrappers
-    hooks/                          # TanStack Query hooks
-    components/
-    lib/
-      supabase.ts                   # auth-only client
-      api/client.ts                 # Axios with Bearer header injection
-      secureStore.ts                # Expo SecureStore adapter
-      formatters.ts                 # Pure TS helpers (duplicated from xrpl_mvp)
-      env.ts, queryClient.ts
-    stores/auth.ts                  # Zustand auth state
+    api/                        # REST client wrappers
+    hooks/                      # TanStack Query hooks (+ query key helpers)
+    features/                   # UI by product area
+      home/                     # UserHome, AdminHome, StickyActions
+      wallet/                   # cards, WalletActionSheet, CreateAdminWalletModal
+      payments/                 # SendSheet, SmartTradeSheet, CurrencySelectorSheet
+      dex/                      # order book + place order + orders panel
+      shared/                   # AssetTable, CurrencyIconImage, TransactionRow, …
+    components/ui/              # AppSheet, tab bar icons, haptic tab
+    lib/                        # formatters, walletAssets, dex math, supabase, …
+    constants/theme.ts
+    stores/auth.ts
 ```
 
 ## Auth flow
@@ -55,7 +58,7 @@ mobile/
 2. Supabase issues a JWT, stored in **Expo SecureStore**.
 3. Every request to `api/` carries `Authorization: Bearer <jwt>`.
 4. On first sign-in, the app calls `POST /auth/profile` to create the `profiles` row.
-5. The Admin tab is conditionally rendered when `profile.role === 'ADMIN'`.
+5. Admin Home (issuer / treasury / pathfind wallets) appears when `profile.role === 'ADMIN'`.
 
 ## OAuth redirect
 

@@ -7,7 +7,7 @@ interface FlagConfig {
   offset: number;
 }
 
-export interface SetFlagsResult {
+interface SetFlagsResult {
   success: boolean;
   errorCode?: string;
   message?: string;

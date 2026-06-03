@@ -17,7 +17,7 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().default(""),
 });
 
-export type Env = z.infer<typeof envSchema>;
+type Env = z.infer<typeof envSchema>;
 
 export const env: Env = (() => {
   const parsed = envSchema.safeParse(process.env);

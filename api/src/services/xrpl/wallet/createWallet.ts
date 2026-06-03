@@ -1,6 +1,6 @@
 import type { Client, Wallet } from "xrpl";
 
-export interface CreateWalletResult {
+interface CreateWalletResult {
   wallet: Wallet;
   balanceXrp: number;
 }

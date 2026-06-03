@@ -1,7 +1,7 @@
 import type { Amount, Client, Payment, Wallet } from "xrpl";
 import { handleTransactionError, isTypedTransactionSuccessful } from "../../../lib/errorHandler.js";
 
-export type CrossCurrencyMode = "exact_input" | "exact_output";
+type CrossCurrencyMode = "exact_input" | "exact_output";
 
 interface SendCrossCurrencyArgs {
   client: Client;

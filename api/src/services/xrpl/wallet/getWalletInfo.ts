@@ -4,7 +4,6 @@ import {
   type AccountLinesTrustline,
   type AccountInfoResponse,
   type AccountLinesResponse,
-  type AccountObjectsResponse,
 } from "xrpl";
 
 export async function getAccountInfo(client: Client, address: string) {
@@ -32,14 +31,4 @@ export async function getAccountLines(
     ledger_index: "validated",
   });
   return response.result.lines;
-}
-
-export async function getAccountObjects(client: Client, address: string) {
-  if (!client.isConnected()) await client.connect();
-  const response: AccountObjectsResponse = await client.request({
-    command: "account_objects",
-    account: address,
-    ledger_index: "validated",
-  });
-  return response.result.account_objects;
 }

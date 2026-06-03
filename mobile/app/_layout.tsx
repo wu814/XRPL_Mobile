@@ -7,7 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import { QueryClientProvider } from "@tanstack/react-query";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useColorScheme } from "@/src/hooks/use-color-scheme";
 import { queryClient } from "@/src/lib/queryClient";
 import { supabase } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/stores/auth";
@@ -109,7 +109,6 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="sign-in" options={{ headerShown: false }} />
           <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
           <Stack.Screen name="advanced/amm" options={{ headerShown: true }} />
           <Stack.Screen name="advanced/dex" options={{ headerShown: true }} />
           <Stack.Screen name="advanced/nft" options={{ headerShown: true }} />

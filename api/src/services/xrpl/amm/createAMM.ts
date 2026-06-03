@@ -1,7 +1,7 @@
 import type { AMMCreate, Amount, Client, TransactionMetadataBase, Wallet } from "xrpl";
 import { handleTransactionError, isTypedTransactionSuccessful } from "../../../lib/errorHandler.js";
 
-export interface CreateAMMInput {
+interface CreateAMMInput {
   client: Client;
   treasuryWallet: Wallet;
   issuerAddress: string;
@@ -12,7 +12,7 @@ export interface CreateAMMInput {
   tradingFee: number;
 }
 
-export interface CreateAMMResult {
+interface CreateAMMResult {
   account: string;
   currency1: string;
   currency2: string;

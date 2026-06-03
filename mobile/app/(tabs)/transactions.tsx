@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useWallets } from "@/src/hooks/useWallets";
 import { useAccountTransactions } from "@/src/hooks/useTransactions";
-import { TransactionRow } from "@/src/components/TransactionRow";
+import { TransactionRow } from "@/src/features/shared/TransactionRow";
 import { shortAddress } from "@/src/lib/formatters";
 import { useAuthStore } from "@/src/stores/auth";
 import type { WalletSummary } from "@/src/api/wallets";

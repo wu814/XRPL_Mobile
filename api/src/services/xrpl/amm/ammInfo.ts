@@ -1,6 +1,6 @@
 import type { Client } from "xrpl";
 
-export interface FormattedAMMInfo {
+interface FormattedAMMInfo {
   account: string;
   formattedAmount1: { currency: string; issuer: string; value: string };
   formattedAmount2: { currency: string; issuer: string; value: string };

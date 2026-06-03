@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { HttpError } from "../plugins/auth.js";
 import { loadWalletByAddress } from "../services/xrpl/wallet/loadWallet.js";
-import { createOffer, type OfferKind } from "../services/xrpl/dex/createOffer.js";
+import { createOffer } from "../services/xrpl/dex/createOffer.js";
 import { cancelOffer } from "../services/xrpl/dex/cancelOffer.js";
 import {
   getBookOffers,
@@ -19,12 +19,19 @@ const amountSchema = z.union([
   }),
 ]);
 
-const createOfferBody = z.object({
-  walletAddress: z.string().min(25),
-  takerPays: amountSchema,
-  takerGets: amountSchema,
-  kind: z.enum(["limit", "ioc", "fok", "passive", "sell"]).default("limit"),
-});
+const createOfferBody = z
+  .object({
+    walletAddress: z.string().min(25),
+    takerPays: amountSchema,
+    takerGets: amountSchema,
+    execution: z.enum(["gtc", "ioc", "fok"]).default("gtc"),
+    passive: z.boolean().optional().default(false),
+    sell: z.boolean().optional().default(false),
+  })
+  .refine((d) => !d.passive || d.execution === "gtc", {
+    message: "Post-only (passive) requires GTC execution",
+    path: ["passive"],
+  });
 
 const bookOffersQuery = z.object({
   takerGetsCurrency: z.string().min(3),
@@ -45,13 +52,11 @@ export async function dexRoutes(app: FastifyInstance) {
       throw new HttpError(403, "Wallet does not belong to you");
     }
 
-    return createOffer(
-      client,
-      wallet,
-      parse.data.takerPays as never,
-      parse.data.takerGets as never,
-      parse.data.kind as OfferKind,
-    );
+    return createOffer(client, wallet, parse.data.takerPays as never, parse.data.takerGets as never, {
+      execution: parse.data.execution,
+      passive: parse.data.passive,
+      sell: parse.data.sell,
+    });
   });
 
   app.delete("/offers/:sequence", async (req) => {

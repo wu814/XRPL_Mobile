@@ -11,7 +11,7 @@ const jwks = createRemoteJWKSet(
 
 const issuer = `${env.SUPABASE_URL}/auth/v1`;
 
-export interface SupabaseClaims {
+interface SupabaseClaims {
   sub: string;
   email?: string;
   payload: JWTPayload;

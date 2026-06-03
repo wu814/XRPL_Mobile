@@ -7,18 +7,36 @@ import {
 } from "xrpl";
 import { handleTransactionError, isTypedTransactionSuccessful } from "../../../lib/errorHandler.js";
 
-export type OfferKind = "limit" | "ioc" | "fok" | "passive" | "sell";
+export type OfferExecution = "gtc" | "ioc" | "fok";
 
-const KIND_TO_FLAGS: Record<OfferKind, number> = {
-  // tfImmediateOrCancel = 0x00020000, tfFillOrKill = 0x00040000, tfPassive = 0x00010000, tfSell = 0x00080000
-  limit: 0,
-  ioc: 0x00020000,
-  fok: 0x00040000,
-  passive: 0x00010000,
-  sell: 0x00080000,
-};
+export interface OfferFlags {
+  execution: OfferExecution;
+  passive?: boolean;
+  sell?: boolean;
+}
 
-export interface CreateOfferResult {
+const TF_PASSIVE = 0x00010000;
+const TF_IOC = 0x00020000;
+const TF_FOK = 0x00040000;
+const TF_SELL = 0x00080000;
+
+export function validateOfferFlags(flags: OfferFlags): void {
+  if (flags.passive && flags.execution !== "gtc") {
+    throw new Error("Post-only (passive) is only available for GTC limit orders");
+  }
+}
+
+export function offerFlagsToNumber(flags: OfferFlags): number {
+  validateOfferFlags(flags);
+  let n = 0;
+  if (flags.execution === "ioc") n |= TF_IOC;
+  if (flags.execution === "fok") n |= TF_FOK;
+  if (flags.passive) n |= TF_PASSIVE;
+  if (flags.sell) n |= TF_SELL;
+  return n;
+}
+
+interface CreateOfferResult {
   hash: string;
   offerSequence?: number;
   ledgerIndex: number;
@@ -29,7 +47,7 @@ export async function createOffer(
   wallet: Wallet,
   takerPays: Amount,
   takerGets: Amount,
-  kind: OfferKind = "limit",
+  flags: OfferFlags = { execution: "gtc" },
 ): Promise<CreateOfferResult> {
   if (!client.isConnected()) await client.connect();
 
@@ -38,11 +56,10 @@ export async function createOffer(
     Account: wallet.classicAddress,
     TakerPays: takerPays,
     TakerGets: takerGets,
-    Flags: KIND_TO_FLAGS[kind] as OfferCreateFlags,
+    Flags: offerFlagsToNumber(flags) as OfferCreateFlags,
   };
 
-  const prepared = await tx; // placeholder typing
-  const autofilled = await client.autofill(prepared);
+  const autofilled = await client.autofill(tx);
   const ledger = await client.request({ command: "ledger_current" });
   autofilled.LastLedgerSequence = ledger.result.ledger_current_index + 20;
 

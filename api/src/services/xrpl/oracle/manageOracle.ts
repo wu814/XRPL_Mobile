@@ -1,7 +1,7 @@
 import { convertStringToHex, type Client, type OracleDelete, type OracleSet, type Wallet } from "xrpl";
 import { handleTransactionError, isTypedTransactionSuccessful } from "../../../lib/errorHandler.js";
 
-export interface SetOracleInput {
+interface SetOracleInput {
   oracleDocumentId: number;
   provider: string;
   assetClass: string;
