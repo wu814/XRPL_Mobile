@@ -4,6 +4,7 @@ import { CurrencyIconImage, LpTokenIcon } from "./CurrencyIconImage";
 import { formatBalance, formatUsd } from "@/src/lib/prices";
 import { shortAddress } from "@/src/lib/formatters";
 import type { WalletAsset } from "@/src/hooks/useWalletAssets";
+import { useLpPairCurrencies } from "@/src/hooks/useLpPairCurrencies";
 
 interface AssetTableProps {
   assets: WalletAsset[];
@@ -15,11 +16,30 @@ function isLpToken(asset: WalletAsset): boolean {
   return !!asset.currency && asset.currency.length === 40;
 }
 
-function displayName(asset: WalletAsset): string {
+function displayName(asset: WalletAsset, pair: { currencyA: string; currencyB: string } | null): string {
   if (isLpToken(asset)) {
+    if (pair) return `${pair.currencyA} / ${pair.currencyB} LP`;
     return `LP Token (${asset.currency.substring(0, 8)}…)`;
   }
   return asset.currency;
+}
+
+function LpAssetIcon({ ammAccount, size }: { ammAccount: string; size: number }) {
+  const pair = useLpPairCurrencies(ammAccount);
+  return (
+    <LpTokenIcon
+      currencyA={pair?.currencyA ?? "?"}
+      currencyB={pair?.currencyB ?? "?"}
+      size={size}
+    />
+  );
+}
+
+function LpAssetName({ asset }: { asset: WalletAsset }) {
+  const pair = useLpPairCurrencies(asset.issuer ?? undefined);
+  return (
+    <Text className="text-base font-semibold text-white">{displayName(asset, pair)}</Text>
+  );
 }
 
 export function AssetTable({ assets, loading, title = "Assets" }: AssetTableProps) {
@@ -66,14 +86,20 @@ export function AssetTable({ assets, loading, title = "Assets" }: AssetTableProp
               >
                 <View className="flex-1 flex-row items-center">
                   <View className="mr-3 h-10 w-10 items-center justify-center">
-                    {lp ? (
+                    {lp && asset.issuer ? (
+                      <LpAssetIcon ammAccount={asset.issuer} size={40} />
+                    ) : lp ? (
                       <LpTokenIcon currencyA="?" currencyB="?" size={40} />
                     ) : (
                       <CurrencyIconImage currency={asset.currency} size={40} />
                     )}
                   </View>
                   <View>
-                    <Text className="text-base font-semibold text-white">{displayName(asset)}</Text>
+                    {lp && asset.issuer ? (
+                      <LpAssetName asset={asset} />
+                    ) : (
+                      <Text className="text-base font-semibold text-white">{displayName(asset, null)}</Text>
+                    )}
                     <Text className="text-xs text-white/50">{formatBalance(asset.balance, 6)}</Text>
                   </View>
                 </View>

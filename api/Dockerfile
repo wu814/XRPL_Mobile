@@ -10,7 +10,6 @@ RUN npm install --include=dev
 
 COPY tsconfig.json ./
 COPY src ./src
-COPY scripts ./scripts
 
 RUN npm run build
 

@@ -13,11 +13,6 @@ export async function adminWallets() {
   return data;
 }
 
-export async function adminBootstrap() {
-  const { data } = await apiClient.post<{ issuer: string; treasury: string }>("/admin/bootstrap");
-  return data;
-}
-
 export async function adminIssue(input: {
   treasuryAddress: string;
   destinationAddress: string;

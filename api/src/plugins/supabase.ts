@@ -1,5 +1,6 @@
 import fp from "fastify-plugin";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import ws from "ws";
 import { env } from "../lib/env.js";
 
 declare module "fastify" {
@@ -13,6 +14,9 @@ export const supabasePlugin = fp(async (app) => {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    realtime: {
+      transport: ws as any,
     },
   });
 

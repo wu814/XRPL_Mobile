@@ -49,7 +49,6 @@ export default function FriendsScreen() {
     <SafeAreaView className="flex-1 bg-black">
       <ScrollView contentContainerClassName="px-6 py-6">
         <Text className="mb-1 text-3xl font-bold text-white">Friends</Text>
-        <Text className="mb-6 text-white/60">Social graph for the demo</Text>
 
         <View className="mb-5 flex-row rounded-full border border-white/10 p-1">
           {(["friends", "requests", "favorites"] as Tab[]).map((t) => (

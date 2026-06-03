@@ -13,8 +13,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts",
-    "bootstrap": "tsx scripts/bootstrap.ts"
+    "lint": "eslint src --ext .ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
@@ -25,11 +24,13 @@
     "jose": "^6.2.3",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",
+    "ws": "^8.21.0",
     "xrpl": "^4.6.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^25.8.0",
+    "@types/ws": "^8.18.1",
     "tsx": "^4.22.0",
     "typescript": "^6.0.3"
   }

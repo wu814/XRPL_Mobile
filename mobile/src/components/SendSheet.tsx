@@ -210,7 +210,7 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
         if (!issuerAddr) {
           return Alert.alert(
             "Issuer unknown",
-            `No issuer found for ${directCurrency}. Ask an admin to bootstrap or create an AMM first.`,
+            `No issuer found for ${directCurrency}. Ask an admin to create an issuer wallet or create an AMM first.`,
           );
         }
         await sendIouMut.mutateAsync({
@@ -236,7 +236,7 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
         if (!issuerAddr) {
           return Alert.alert(
             "Issuer unknown",
-            `No issuer found for ${directCurrency}. Ask the admin to bootstrap or create an AMM first.`,
+            `No issuer found for ${directCurrency}. Ask the admin to create an issuer wallet or create an AMM first.`,
           );
         }
         await sendIouMut.mutateAsync({
@@ -271,7 +271,7 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
     if (!issuerAddr) {
       return Alert.alert(
         "Issuer unknown",
-        "No issuer found for these currencies. Ask the admin to bootstrap or create an AMM first.",
+        "No issuer found for these currencies. Ask the admin to create an issuer wallet or create an AMM first.",
       );
     }
 

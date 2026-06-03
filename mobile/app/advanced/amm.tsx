@@ -2,7 +2,9 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -121,7 +123,7 @@ function CreateAmmModal({ visible, onClose }: { visible: boolean; onClose: () =>
 
   const onSubmit = async () => {
     if (!treasury || !issuer) {
-      Alert.alert("Missing wallets", "Treasury or issuer wallet not bootstrapped.");
+      Alert.alert("Missing wallets", "Create treasury and issuer wallets on the Home tab first.");
       return;
     }
     const v1 = Number(value1);
@@ -150,19 +152,33 @@ function CreateAmmModal({ visible, onClose }: { visible: boolean; onClose: () =>
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} transparent={false}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      onRequestClose={onClose}
+      presentationStyle="pageSheet"
+    >
       <SafeAreaView className="flex-1 bg-black">
-        <ScrollView contentContainerClassName="px-6 py-6">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-2xl font-bold text-white">Create AMM</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text className="text-white/60">Cancel</Text>
-            </TouchableOpacity>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          className="flex-1"
+        >
+          <View className="border-b border-white/10 px-6 py-4">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-xl font-bold text-white">Create AMM</Text>
+              <TouchableOpacity onPress={onClose}>
+                <Text className="text-white/60">Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
+          <ScrollView
+            contentContainerClassName="px-6 py-5"
+            keyboardShouldPersistTaps="handled"
+          >
           {!treasury || !issuer ? (
             <Text className="text-danger">
-              Treasury / Issuer wallets not bootstrapped on the server.
+              Treasury / Issuer wallets not created yet. Add them from the admin Home tab.
             </Text>
           ) : (
             <>
@@ -221,7 +237,8 @@ function CreateAmmModal({ visible, onClose }: { visible: boolean; onClose: () =>
               </TouchableOpacity>
             </>
           )}
-        </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );

@@ -1,5 +1,7 @@
 # Deploying `api/` to Railway
 
+[Railway](https://railway.app) is a PaaS (platform as a service): it builds your Docker image, runs the container 24/7, injects environment variables, exposes an HTTPS URL, and restarts the process if it crashes. This repo uses Railway **only for `api/`** — not for Expo (`mobile/`) or Supabase.
+
 This service is containerized via [`Dockerfile`](./Dockerfile). Railway auto-detects the Dockerfile and builds the image for each push.
 
 ## One-time setup

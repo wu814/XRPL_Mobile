@@ -62,13 +62,49 @@ npm install
 npm run ios                # or npm run android
 ```
 
-After signing in once, run `npm run bootstrap` in `api/` to create the issuer and treasury wallets via the XRPL Testnet faucet. Then promote your demo account in SQL:
+After signing in once, promote your demo account in SQL:
 
 ```sql
 update public.profiles set role = 'ADMIN' where email = 'you@example.com';
 ```
 
-The Admin tab will appear automatically in the mobile app on next sign-in.
+Sign in again, then on the Home tab use **Create Wallet** to add issuer, treasury, and pathfind wallets (Testnet faucet + XRPL flags are applied automatically). The admin Home screen appears when `profiles.role = 'ADMIN'`.
+
+## Hosting with Railway
+
+**Railway** is a hosted platform that runs your **`api/`** service on the public internet. It is not used for the mobile app or Supabase — only the Fastify backend.
+
+When you connect this repo to Railway (see [`api/RAILWAY.md`](./api/RAILWAY.md)):
+
+1. Railway watches your GitHub repo and, on each push, runs `docker build` using [`api/Dockerfile`](./api/Dockerfile).
+2. It starts the resulting container with your env vars (Supabase secret key, encryption key, XRPL URLs, `CORS_ORIGINS`, etc.).
+3. Railway assigns a public HTTPS URL (e.g. `https://your-app.up.railway.app`) and routes traffic to port `3001` inside the container.
+4. You set `EXPO_PUBLIC_API_URL` in `mobile/.env` to that URL so phones and simulators call the hosted API instead of `localhost`.
+
+Locally you run the same API with `npm run dev`. On Railway you run the **production build** (`node dist/server.js`) inside Docker — the same artifact you can test with `docker run` on your machine.
+
+**What stays elsewhere:** Supabase (auth + Postgres) and XRPL Testnet are external services; Railway only hosts the Node process that talks to them.
+
+## Docker (optional, local)
+
+Docker is **not** required for day-to-day development. Cloners should use `npm run dev` in `api/` (see Quick start above).
+
+Use Docker locally when you want to:
+
+- Run the **same production image** Railway deploys, before pushing
+- Avoid relying on your machine’s Node version for a smoke test
+- Confirm `npm run build` and the container start cleanly (e.g. after changing `Dockerfile` or dependencies)
+
+```bash
+cd api
+cp .env.example .env    # same keys as npm run dev
+npm install
+docker build -t xrpl-mobile-api .
+docker run -p 3001:3001 --env-file .env xrpl-mobile-api
+# GET http://localhost:3001/health
+```
+
+Stop `npm run dev` first if port 3001 is already in use. After code changes, rebuild the image. Full notes: [`api/README.md`](./api/README.md#build--docker).
 
 ## Repo layout
 
@@ -77,7 +113,6 @@ xrpl_mobile/
   mobile/             # Expo app (React Native)
   api/                # Fastify backend (Docker)
     db/               # SQL schema + setup notes
-    scripts/          # bootstrap.ts (idempotent issuer/treasury setup)
   .github/workflows/  # CI: typecheck + build for both folders
 ```
 

@@ -48,18 +48,11 @@ update public.profiles set role = 'ADMIN' where email = 'you@example.com';
 
 Or call `POST /admin/promote` once an existing admin has been created (chicken-and-egg: the first admin must be set via SQL).
 
-## 6. Bootstrap issuer + treasury wallets
+## 6. Create issuer + treasury (+ pathfind) wallets
 
-Once the API has env vars set, run:
+Once you are `ADMIN` and the API is running, create system wallets from the mobile Home tab (**Create Wallet**), or call `POST /wallets` with `walletType: "issuer" | "treasury" | "pathfind"`. Each request funds a new wallet via the XRPL Testnet faucet, encrypts the seed, inserts a row into `wallets` with `user_id` null, and applies issuer/treasury XRPL flags when applicable.
 
-```bash
-cd api
-npm run bootstrap
-```
-
-This creates one issuer wallet and one treasury wallet via the XRPL Testnet faucet, encrypts their seeds, and inserts them into `wallets` with `wallet_type = 'issuer' | 'treasury'`.
-
-> **Note:** Admins can also create issuer, treasury, _and pathfind_ wallets from the mobile home screen via `POST /wallets` with `walletType: "issuer" | "treasury" | "pathfind"`. The endpoint funds the wallet and applies the appropriate XRPL flags automatically (matches the `xrpl_mvp` admin flow).
+Alternatively, `POST /admin/bootstrap` (admin auth) creates issuer and treasury in one call if they do not already exist.
 
 ## 7. Migrating existing projects
 
