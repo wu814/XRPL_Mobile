@@ -55,7 +55,9 @@ export function DexPlaceOrder({ walletAddress, pair, onPairChange }: DexPlaceOrd
   };
 
   const onSubmit = async () => {
-    if (!walletAddress) return Alert.alert("Wallet", "Select a wallet first");
+    if (!walletAddress) {
+      return Alert.alert("Pathfind wallet", "Create a pathfind wallet before placing orders.");
+    }
     if (!pair?.issuerAddress) return Alert.alert("Issuer", "No issuer wallet on Testnet yet");
     const price = Number(limitPrice);
     const qty = Number(quantity);
@@ -86,9 +88,16 @@ export function DexPlaceOrder({ walletAddress, pair, onPairChange }: DexPlaceOrd
     }
   };
 
+  const canPlace = Boolean(walletAddress);
+
   return (
     <View className="flex-1 rounded-2xl border border-white/10 bg-white/5 p-3">
       <Text className="mb-2 text-xs font-semibold text-white">Place order</Text>
+      {!canPlace ? (
+        <Text className="mb-3 text-[10px] leading-4 text-amber-200/90">
+          Orders are placed from the pathfind wallet. Create one on the admin Home screen.
+        </Text>
+      ) : null}
 
       <Text className="mb-1 text-[10px] text-white/55">Pair</Text>
       {pair ? (
@@ -205,13 +214,15 @@ export function DexPlaceOrder({ walletAddress, pair, onPairChange }: DexPlaceOrd
 
       <Pressable
         onPress={onSubmit}
-        disabled={createMut.isPending || !walletAddress}
-        className={`items-center rounded-xl py-2.5 ${side === "buy" ? "bg-emerald-500" : "bg-danger"}`}
+        disabled={createMut.isPending || !canPlace}
+        className={`items-center rounded-xl py-2.5 ${
+          !canPlace ? "bg-white/15" : side === "buy" ? "bg-emerald-500" : "bg-danger"
+        }`}
       >
         {createMut.isPending ? (
           <ActivityIndicator color="#000" />
         ) : (
-          <Text className="text-sm font-semibold text-black">
+          <Text className={`text-sm font-semibold ${canPlace ? "text-black" : "text-white/40"}`}>
             {side === "buy" ? "Buy" : "Sell"} {pair?.base ?? ""}
           </Text>
         )}

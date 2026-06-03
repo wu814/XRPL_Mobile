@@ -47,9 +47,12 @@ export async function dexRoutes(app: FastifyInstance) {
     if (!parse.success) throw new HttpError(400, "Invalid body");
 
     const client = await app.ensureXrplConnected();
-    const { wallet, userId } = await loadWalletByAddress(app.supabase, parse.data.walletAddress);
+    const { wallet, userId, walletType } = await loadWalletByAddress(app.supabase, parse.data.walletAddress);
     if (userId !== user.id && user.role !== "ADMIN") {
       throw new HttpError(403, "Wallet does not belong to you");
+    }
+    if (walletType !== "pathfind") {
+      throw new HttpError(403, "Only pathfind wallets may create DEX offers");
     }
 
     return createOffer(client, wallet, parse.data.takerPays as never, parse.data.takerGets as never, {

@@ -1,61 +1,26 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useWallets } from "@/src/hooks/useWallets";
 import { useDexOrderBook } from "@/src/hooks/useDex";
 import { getIssuerWallets } from "@/src/api/wallets";
-import { shortAddress } from "@/src/lib/formatters";
 import type { DexCurrencyPair } from "@/src/lib/dex";
 import { DEFAULT_DEX_PAIR } from "@/src/lib/dex";
 import { DexPlaceOrder } from "@/src/features/dex/DexPlaceOrder";
 import { DexOrderBook } from "@/src/features/dex/DexOrderBook";
 import { DexOrdersPanel } from "@/src/features/dex/DexOrdersPanel";
-import { useAuthStore } from "@/src/stores/auth";
 
 export default function DexScreen() {
-  const isAdmin = useAuthStore((s) => s.profile?.role) === "ADMIN";
   const wallets = useWallets();
   const issuers = useQuery({ queryKey: ["wallets", "issuers"], queryFn: getIssuerWallets });
 
-  const [selected, setSelected] = useState<string | null>(null);
-
-  const tradeWallets = useMemo(
+  const pathfindWalletAddress = useMemo(
     () =>
-      (wallets.data ?? []).filter(
-        (w) => w.wallet_type === "user" || w.wallet_type === "pathfind",
-      ),
+      (wallets.data ?? []).find((w) => w.wallet_type === "pathfind")?.classic_address ?? null,
     [wallets.data],
   );
-
-  const walletOptions = tradeWallets.length ? tradeWallets : wallets.data ?? [];
-
-  const defaultWalletAddress = useMemo(() => {
-    if (isAdmin) {
-      const pathfind = walletOptions.find((w) => w.wallet_type === "pathfind");
-      if (pathfind) return pathfind.classic_address;
-    }
-    return walletOptions[0]?.classic_address ?? null;
-  }, [isAdmin, walletOptions]);
-
-  useEffect(() => {
-    if (!defaultWalletAddress) {
-      setSelected(null);
-      return;
-    }
-    const stillValid =
-      selected != null && walletOptions.some((w) => w.classic_address === selected);
-    if (!stillValid) setSelected(defaultWalletAddress);
-  }, [defaultWalletAddress, selected, walletOptions]);
-
-  const walletAddress = selected ?? defaultWalletAddress;
 
   const [baseCurrency, setBaseCurrency] = useState(DEFAULT_DEX_PAIR.base);
   const [quoteCurrency, setQuoteCurrency] = useState(DEFAULT_DEX_PAIR.quote);
@@ -103,28 +68,26 @@ export default function DexScreen() {
           </View>
         )}
 
-        <Text className="mb-2 text-xs uppercase tracking-wider text-white/50">Wallet</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-          {walletOptions.map((w) => {
-            const isSelected = walletAddress === w.classic_address;
-            return (
-              <TouchableOpacity
-                key={w.id}
-                onPress={() => setSelected(w.classic_address)}
-                className={`mr-2 rounded-full px-4 py-2 ${isSelected ? "bg-primary" : "border border-white/20"}`}
-              >
-                <Text className={`text-xs ${isSelected ? "text-black" : "text-white"}`}>
-                  {shortAddress(w.classic_address)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {!pathfindWalletAddress && !wallets.isLoading && (
+          <View className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+            <Text className="text-xs text-amber-200">
+              Create a pathfind wallet (admin Home → Create Wallet) to place and view orders.
+            </Text>
+          </View>
+        )}
 
-        {/* Trade row: place order (left) + order book (right) — matches xrpl_mvp / screenshot layout */}
+        {pathfindWalletAddress ? (
+          <>
+            <Text className="mb-2 text-xs uppercase tracking-wider text-white/50">Wallet</Text>
+            <View className="mb-4 self-start rounded-full bg-primary px-4 py-2">
+              <Text className="text-xs font-semibold uppercase text-black">pathfind</Text>
+            </View>
+          </>
+        ) : null}
+
         <View className="mb-2 min-h-[340px] flex-row gap-2">
           <DexPlaceOrder
-            walletAddress={walletAddress}
+            walletAddress={pathfindWalletAddress}
             pair={pair}
             onPairChange={onPairChange}
           />
@@ -145,7 +108,7 @@ export default function DexScreen() {
           )}
         </View>
 
-        <DexOrdersPanel walletAddress={walletAddress} />
+        <DexOrdersPanel walletAddress={pathfindWalletAddress} />
       </ScrollView>
     </SafeAreaView>
   );
