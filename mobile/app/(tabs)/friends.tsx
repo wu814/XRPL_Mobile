@@ -2,13 +2,13 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { AppScrollView } from "@/src/components/ui/AppScrollView";
+import { Screen } from "@/src/components/ui/Screen";
 import {
   useFavorites,
   useFriendRequests,
@@ -46,8 +46,8 @@ export default function FriendsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <ScrollView contentContainerClassName="px-6 py-6">
+    <Screen>
+      <AppScrollView contentContainerClassName="px-6 py-6">
         <Text className="mb-1 text-3xl font-bold text-white">Friends</Text>
 
         <View className="mb-5 flex-row rounded-full border border-white/10 p-1">
@@ -170,7 +170,7 @@ export default function FriendsScreen() {
           ) : (
             <Text className="text-white/50">No favorites yet</Text>
           ))}
-      </ScrollView>
-    </SafeAreaView>
+      </AppScrollView>
+    </Screen>
   );
 }

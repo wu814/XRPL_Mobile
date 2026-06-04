@@ -85,11 +85,7 @@ export function WalletSummaryCard({
         </View>
       </View>
 
-      <Text
-        className="mt-3 font-mono text-xs text-white/60"
-        numberOfLines={1}
-        ellipsizeMode="middle"
-      >
+      <Text className="mt-3 font-mono text-xs text-white/60">
         {wallet.classic_address}
       </Text>
 

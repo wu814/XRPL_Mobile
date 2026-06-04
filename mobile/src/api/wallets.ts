@@ -34,6 +34,15 @@ export async function getWalletLines(address: string) {
   return data;
 }
 
+export interface WalletObligations {
+  obligations: Record<string, string>;
+}
+
+export async function getWalletObligations(address: string): Promise<WalletObligations> {
+  const { data } = await apiClient.get<WalletObligations>(`/wallets/${address}/obligations`);
+  return data;
+}
+
 export interface WalletByUsername {
   username: string;
   classic_address: string;

@@ -17,7 +17,7 @@ import { useAdminWallets } from "@/src/hooks/useAdminWallets";
 import { getAmmInfoByCurrencies, listAmms, type AmmInfo } from "@/src/api/amm";
 import { useAuthStore } from "@/src/stores/auth";
 import { AppSheet } from "@/src/components/ui/AppSheet";
-import { CurrencySelectorSheet } from "@/src/features/payments/CurrencySelectorSheet";
+import { CurrencySelectorList } from "@/src/features/payments/CurrencySelectorSheet";
 import { CurrencyIconImage } from "@/src/features/shared/CurrencyIconImage";
 import {
   calculateEstimateOutput,
@@ -106,6 +106,10 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
       cancelled = true;
     };
   }, [visible, paymentMode, sendCurrency, receiveCurrency]);
+
+  useEffect(() => {
+    if (!visible) setPickerFor(null);
+  }, [visible]);
 
   useEffect(() => {
     if (paymentMode !== "convertable") return;
@@ -313,14 +317,38 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
     sendCurrency !== receiveCurrency &&
     (Number(sendAmount) > 0 || Number(receiveAmount) > 0);
 
+  const pickerOpen = pickerFor !== null;
+  const dismissPicker = () => setPickerFor(null);
+  const pickerExclude =
+    pickerFor === "send"
+      ? receiveCurrency
+      : pickerFor === "receive"
+        ? sendCurrency
+        : undefined;
+  const pickerSelected =
+    pickerFor === "direct"
+      ? directCurrency
+      : pickerFor === "send"
+        ? sendCurrency
+        : pickerFor === "receive"
+          ? receiveCurrency
+          : undefined;
+
+  const onPickerSelect = (c: string) => {
+    if (pickerFor === "direct") setDirectCurrency(c);
+    else if (pickerFor === "send") setSendCurrency(c);
+    else if (pickerFor === "receive") setReceiveCurrency(c);
+    setPickerFor(null);
+  };
+
   return (
-    <>
-      <AppSheet
-        visible={visible}
-        onClose={onClose}
-        title="Send"
-        keyboardAvoiding
-        headerExtra={
+    <AppSheet
+      visible={visible}
+      onClose={pickerOpen ? dismissPicker : onClose}
+      title={pickerOpen ? "Select Currency" : "Send"}
+      keyboardAvoiding={!pickerOpen}
+      headerExtra={
+        pickerOpen ? undefined : (
           <SegmentedControl
             value={paymentMode}
             onChange={(v) => setPaymentMode(v as PaymentMode)}
@@ -329,8 +357,17 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
               { id: "convertable", label: "Convertable" },
             ]}
           />
-        }
-      >
+        )
+      }
+    >
+      {pickerOpen ? (
+        <CurrencySelectorList
+          onSelect={onPickerSelect}
+          exclude={pickerExclude}
+          selected={pickerSelected}
+        />
+      ) : (
+        <>
             <Text className="mb-3 text-xs text-white/40">
               {paymentMode === "direct"
                 ? "Trustline-to-trustline payment"
@@ -432,26 +469,9 @@ export function SendSheet({ visible, onClose, walletAddress }: SendSheetProps) {
                 </Text>
               )}
             </TouchableOpacity>
-      </AppSheet>
-
-      <CurrencySelectorSheet
-        visible={pickerFor !== null}
-        onClose={() => setPickerFor(null)}
-        exclude={
-          pickerFor === "send"
-            ? receiveCurrency
-            : pickerFor === "receive"
-              ? sendCurrency
-              : undefined
-        }
-        onSelect={(c) => {
-          if (pickerFor === "direct") setDirectCurrency(c);
-          else if (pickerFor === "send") setSendCurrency(c);
-          else if (pickerFor === "receive") setReceiveCurrency(c);
-          setPickerFor(null);
-        }}
-      />
-    </>
+        </>
+      )}
+    </AppSheet>
   );
 }
 

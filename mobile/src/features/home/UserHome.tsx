@@ -3,11 +3,11 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
-  ScrollView,
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { AppScrollView } from "@/src/components/ui/AppScrollView";
+import { Screen } from "@/src/components/ui/Screen";
 import { useCreateWallet, useWallets } from "@/src/hooks/useWallets";
 import { useWalletAssets } from "@/src/hooks/useWalletAssets";
 import {
@@ -45,8 +45,8 @@ export function UserHome() {
   const refreshing = wallets.isFetching || assetsState.isLoading;
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <ScrollView
+    <Screen>
+      <AppScrollView
         contentContainerClassName="px-6 pt-6 pb-32"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
@@ -77,7 +77,7 @@ export function UserHome() {
 
         <Text className="mb-3 mt-8 text-xl font-bold text-white">Portfolio</Text>
         <AssetTable assets={assetsState.assets} loading={assetsState.isLoading} />
-      </ScrollView>
+      </AppScrollView>
 
       <StickyActions
         canAct={!!address}
@@ -96,6 +96,6 @@ export function UserHome() {
         onClose={() => setShowSend(false)}
         walletAddress={address ?? null}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }

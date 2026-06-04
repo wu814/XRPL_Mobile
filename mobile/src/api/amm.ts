@@ -18,11 +18,15 @@ export interface AmmInfo {
   tradingFee: number;
 }
 
-export interface AssetSpec {
-  currency: string;
-  issuer: string;
-  value: string;
-}
+export type DepositType = "twoAsset" | "twoAssetLPToken" | "oneAsset" | "oneAssetLPToken";
+export type WithdrawMode =
+  | "twoAsset"
+  | "lpToken"
+  | "all"
+  | "singleAsset"
+  | "singleAssetAll"
+  | "singleAssetLp";
+export type SwapPaymentType = "exact_input" | "exact_output";
 
 export async function listAmms() {
   const { data } = await apiClient.get<AmmRow[]>("/amm");
@@ -57,39 +61,80 @@ export async function getAmmInfoByCurrencies(input: {
   return data;
 }
 
-export async function addLiquidity(input: {
-  account: string;
-  walletAddress: string;
-  amount1: AssetSpec;
-  amount2: AssetSpec;
-}) {
-  const { data } = await apiClient.post(`/amm/${input.account}/liquidity`, {
-    walletAddress: input.walletAddress,
-    amount1: input.amount1,
-    amount2: input.amount2,
-  });
+export type AddLiquidityBody =
+  | {
+      depositType: "twoAsset";
+      walletAddress: string;
+      addValue1: string;
+      addValue2: string;
+    }
+  | {
+      depositType: "twoAssetLPToken";
+      walletAddress: string;
+      addValue1: string;
+      addValue2: string;
+      lpTokenValue: string;
+    }
+  | {
+      depositType: "oneAsset";
+      walletAddress: string;
+      addValue1: string;
+      selectedCurrency: string;
+    }
+  | {
+      depositType: "oneAssetLPToken";
+      walletAddress: string;
+      addValue1: string;
+      selectedCurrency: string;
+      lpTokenValue: string;
+    };
+
+export async function addLiquidity(account: string, body: AddLiquidityBody) {
+  const { data } = await apiClient.post(`/amm/${account}/liquidity`, body);
   return data as { hash: string };
 }
 
-export async function withdrawLiquidity(input: {
-  account: string;
-  walletAddress: string;
-  asset1: { currency: string; issuer: string };
-  asset2: { currency: string; issuer: string };
-  lpToken: { currency: string; issuer: string; value: string };
-}) {
-  const { data } = await apiClient.delete(`/amm/${input.account}/liquidity`, {
-    data: input,
-  });
-  return data as { hash: string };
+export type WithdrawLiquidityBody =
+  | {
+      mode: "twoAsset";
+      walletAddress: string;
+      withdrawValue1: string;
+      withdrawValue2: string;
+    }
+  | { mode: "lpToken"; walletAddress: string; lpTokenValue: string }
+  | { mode: "all"; walletAddress: string }
+  | {
+      mode: "singleAsset";
+      walletAddress: string;
+      singleWithdrawCurrency: string;
+      singleWithdrawValue: string;
+    }
+  | { mode: "singleAssetAll"; walletAddress: string; singleWithdrawCurrency: string }
+  | {
+      mode: "singleAssetLp";
+      walletAddress: string;
+      singleWithdrawCurrency: string;
+      lpTokenValue: string;
+    };
+
+export async function withdrawLiquidity(account: string, body: WithdrawLiquidityBody) {
+  const { data } = await apiClient.delete(`/amm/${account}/liquidity`, { data: body });
+  return data as { hash: string; poolDeleted: boolean };
 }
 
-export async function ammSwap(input: {
-  account: string;
-  walletAddress: string;
-  sendMax: string | AssetSpec;
-  destinationAmount: string | AssetSpec;
-}) {
-  const { data } = await apiClient.post(`/amm/${input.account}/swap`, input);
+export async function ammSwap(
+  account: string,
+  body: {
+    walletAddress: string;
+    sendCurrency: string;
+    receiveCurrency: string;
+    issuerAddress: string;
+    paymentType: SwapPaymentType;
+    sendAmount?: number;
+    exactOutputAmount?: number;
+    slippagePercent?: number;
+  },
+) {
+  const { data } = await apiClient.post(`/amm/${account}/swap`, body);
   return data as { hash: string };
 }

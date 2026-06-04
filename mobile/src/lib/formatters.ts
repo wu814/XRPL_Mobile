@@ -21,10 +21,9 @@ export function formatXrp(xrp: number | string, decimals = 6): string {
   return n.toFixed(decimals).replace(/0+$/, "").replace(/\.$/, "");
 }
 
-export function shortAddress(address: string, head = 6, tail = 4): string {
-  if (!address) return "";
-  if (address.length <= head + tail + 3) return address;
-  return `${address.slice(0, head)}...${address.slice(-tail)}`;
+/** LP tokens use a 40-character currency field (AMM account id), not an ISO code. */
+export function isLpTokenCurrency(code: string): boolean {
+  return !!code && code.length === 40;
 }
 
 /** Convert an XRPL hex currency code (40 chars) to a printable label. */

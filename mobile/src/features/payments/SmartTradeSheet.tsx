@@ -9,12 +9,13 @@ import {
 } from "react-native";
 import { useMutation } from "@tanstack/react-query";
 import { ammSwap, getAmmInfoByCurrencies, type AmmInfo } from "@/src/api/amm";
+import { poolIssuerAddress } from "@/src/lib/estimateDepositAmount";
 import { availableCurrencies } from "@/src/lib/currencyIcon";
 import { AppSheet } from "@/src/components/ui/AppSheet";
 import { CurrencyIconImage } from "@/src/features/shared/CurrencyIconImage";
 import { calculateEstimateOutput, calculateExactAMMInput } from "@/src/lib/ammCalculations";
 import { formatBalance } from "@/src/lib/prices";
-import { CurrencySelectorSheet } from "@/src/features/payments/CurrencySelectorSheet";
+import { CurrencySelectorList } from "@/src/features/payments/CurrencySelectorSheet";
 
 interface SmartTradeSheetProps {
   visible: boolean;
@@ -44,6 +45,10 @@ export function SmartTradeSheet({
   const [calcError, setCalcError] = useState<string | null>(null);
 
   const [pickerFor, setPickerFor] = useState<"sell" | "buy" | null>(null);
+
+  useEffect(() => {
+    if (!visible) setPickerFor(null);
+  }, [visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -117,7 +122,13 @@ export function SmartTradeSheet({
   }, [sellAmount, buyAmount, activeInput, ammInfo, sellCurrency, slippage]);
 
   const swapMut = useMutation({
-    mutationFn: ammSwap,
+    mutationFn: ({
+      account,
+      body,
+    }: {
+      account: string;
+      body: Parameters<typeof ammSwap>[1];
+    }) => ammSwap(account, body),
   });
 
   const onMax = useCallback(() => {
@@ -150,13 +161,24 @@ export function SmartTradeSheet({
       return;
     }
     try {
-      const sendMax = buildAmount(sellCurrency, sellAmt, ammInfo);
-      const destinationAmount = buildAmount(buyCurrency, buyAmt, ammInfo);
+      const issuer = poolIssuerAddress(ammInfo);
+      if (!issuer) {
+        Alert.alert("Trade failed", "Could not determine issuer for this pool.");
+        return;
+      }
+      const paymentType = activeInput === "sell" ? "exact_input" : "exact_output";
       await swapMut.mutateAsync({
         account: ammInfo.account,
-        walletAddress,
-        sendMax,
-        destinationAmount,
+        body: {
+          walletAddress,
+          sendCurrency: sellCurrency,
+          receiveCurrency: buyCurrency,
+          issuerAddress: issuer,
+          paymentType,
+          sendAmount: sellAmt,
+          exactOutputAmount: paymentType === "exact_output" ? buyAmt : undefined,
+          slippagePercent: slippage,
+        },
       });
       Alert.alert("Smart Trade executed");
       setSellAmount("");
@@ -167,21 +189,41 @@ export function SmartTradeSheet({
     }
   };
 
+  const pickerOpen = pickerFor !== null;
+  const dismissPicker = () => setPickerFor(null);
+  const pickerExclude = pickerFor === "sell" ? buyCurrency : sellCurrency;
+  const pickerSelected = pickerFor === "sell" ? sellCurrency : buyCurrency;
+
+  const onPickerSelect = (c: string) => {
+    if (pickerFor === "sell") setSellCurrency(c);
+    else if (pickerFor === "buy") setBuyCurrency(c);
+    setPickerFor(null);
+  };
+
   return (
-    <>
-      <AppSheet
-        visible={visible}
-        onClose={onClose}
-        title="Smart Trade / Payment"
-        keyboardAvoiding
-        headerExtra={
+    <AppSheet
+      visible={visible}
+      onClose={pickerOpen ? dismissPicker : onClose}
+      title={pickerOpen ? "Select Currency" : "Smart Trade / Payment"}
+      keyboardAvoiding={!pickerOpen}
+      headerExtra={
+        pickerOpen ? undefined : (
           <View className="mt-4 flex-row rounded-full bg-white/10 p-1">
             <View className="flex-1 items-center rounded-full bg-primary/20 py-2">
               <Text className="text-sm font-semibold text-primary">Convert</Text>
             </View>
           </View>
-        }
-      >
+        )
+      }
+    >
+      {pickerOpen ? (
+        <CurrencySelectorList
+          onSelect={onPickerSelect}
+          exclude={pickerExclude}
+          selected={pickerSelected}
+        />
+      ) : (
+        <>
             {loadingAmm ? (
               <View className="mb-4 flex-row items-center rounded-full border border-blue-500/40 bg-blue-900/20 px-3 py-2">
                 <ActivityIndicator color="#60a5fa" />
@@ -278,19 +320,9 @@ export function SmartTradeSheet({
                 </Text>
               )}
             </TouchableOpacity>
-      </AppSheet>
-
-      <CurrencySelectorSheet
-        visible={pickerFor !== null}
-        onClose={() => setPickerFor(null)}
-        exclude={pickerFor === "sell" ? buyCurrency : sellCurrency}
-        onSelect={(c) => {
-          if (pickerFor === "sell") setSellCurrency(c);
-          else if (pickerFor === "buy") setBuyCurrency(c);
-          setPickerFor(null);
-        }}
-      />
-    </>
+        </>
+      )}
+    </AppSheet>
   );
 }
 
@@ -324,19 +356,4 @@ function getPoolPair(amm: AmmInfo, sellCurrency: string): { poolIn: number; pool
     return { poolIn: parseFloat(a2.value), poolOut: parseFloat(a1.value) };
   }
   return null;
-}
-
-function buildAmount(currency: string, amount: number, amm: AmmInfo): string | { currency: string; issuer: string; value: string } {
-  if (currency === "XRP") {
-    return Math.floor(amount * 1_000_000).toString();
-  }
-  const issuer =
-    amm.formattedAmount1.currency === currency
-      ? amm.formattedAmount1.issuer
-      : amm.formattedAmount2.issuer;
-  return {
-    currency,
-    issuer,
-    value: amount.toString(),
-  };
 }

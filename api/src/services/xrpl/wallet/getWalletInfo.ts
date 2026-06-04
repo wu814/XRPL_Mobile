@@ -4,6 +4,7 @@ import {
   type AccountLinesTrustline,
   type AccountInfoResponse,
   type AccountLinesResponse,
+  type GatewayBalancesResponse,
 } from "xrpl";
 
 export async function getAccountInfo(client: Client, address: string) {
@@ -31,4 +32,18 @@ export async function getAccountLines(
     ledger_index: "validated",
   });
   return response.result.lines;
+}
+
+/** Total issued IOU obligations for a gateway/issuer account. */
+export async function getGatewayObligations(
+  client: Client,
+  address: string,
+): Promise<Record<string, string>> {
+  if (!client.isConnected()) await client.connect();
+  const response: GatewayBalancesResponse = await client.request({
+    command: "gateway_balances",
+    account: address,
+    ledger_index: "validated",
+  });
+  return response.result.obligations ?? {};
 }

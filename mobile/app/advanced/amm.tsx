@@ -2,22 +2,21 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { AppScrollView } from "@/src/components/ui/AppScrollView";
+import { AppSheet } from "@/src/components/ui/AppSheet";
+import { Screen } from "@/src/components/ui/Screen";
 import { Stack, useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAmms, ammKeys } from "@/src/hooks/useAmm";
 import { createAmm } from "@/src/api/amm";
 import { useAdminWallets } from "@/src/hooks/useAdminWallets";
-import { decodeCurrency, shortAddress } from "@/src/lib/formatters";
+import { decodeCurrency } from "@/src/lib/formatters";
 import { useAuthStore } from "@/src/stores/auth";
 import { availableCurrencies } from "@/src/lib/currencyIcon";
 import { CurrencyIconImage } from "@/src/features/shared/CurrencyIconImage";
@@ -31,7 +30,7 @@ export default function AmmListScreen() {
   const [showCreate, setShowCreate] = useState(false);
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
+    <Screen>
       <Stack.Screen
         options={{
           title: "AMM",
@@ -39,7 +38,7 @@ export default function AmmListScreen() {
           headerTintColor: "#fff",
         }}
       />
-      <ScrollView contentContainerClassName="px-6 py-6">
+      <AppScrollView contentContainerClassName="px-6 py-6">
         <View className="mb-6 flex-row items-end justify-between">
           <View className="flex-1">
             <Text className="mb-1 text-3xl font-bold text-white">AMM</Text>
@@ -75,7 +74,7 @@ export default function AmmListScreen() {
                   {decodeCurrency(a.currency1)} / {decodeCurrency(a.currency2)}
                 </Text>
               </View>
-              <Text className="text-xs text-white/60">{shortAddress(a.account, 10, 6)}</Text>
+              <Text className="font-mono text-xs text-white/60">{a.account}</Text>
             </TouchableOpacity>
           ))
         ) : (
@@ -87,12 +86,12 @@ export default function AmmListScreen() {
             </Text>
           </View>
         )}
-      </ScrollView>
+      </AppScrollView>
 
       {isAdmin && (
         <CreateAmmModal visible={showCreate} onClose={() => setShowCreate(false)} />
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -148,30 +147,7 @@ function CreateAmmModal({ visible, onClose }: { visible: boolean; onClose: () =>
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      onRequestClose={onClose}
-      presentationStyle="pageSheet"
-    >
-      <SafeAreaView className="flex-1 bg-black">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1"
-        >
-          <View className="border-b border-white/10 px-6 py-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-xl font-bold text-white">Create AMM</Text>
-              <TouchableOpacity onPress={onClose}>
-                <Text className="text-white/60">Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <ScrollView
-            contentContainerClassName="px-6 py-5"
-            keyboardShouldPersistTaps="handled"
-          >
+    <AppSheet visible={visible} onClose={onClose} title="Create AMM">
           {!treasury || !issuer ? (
             <Text className="text-danger">
               Treasury / Issuer wallets not created yet. Add them from the admin Home tab.
@@ -233,10 +209,7 @@ function CreateAmmModal({ visible, onClose }: { visible: boolean; onClose: () =>
               </TouchableOpacity>
             </>
           )}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </Modal>
+    </AppSheet>
   );
 }
 

@@ -5,6 +5,8 @@ import {
   getAmm,
   listAmms,
   withdrawLiquidity,
+  type AddLiquidityBody,
+  type WithdrawLiquidityBody,
 } from "@/src/api/amm";
 
 export const ammKeys = {
@@ -28,7 +30,8 @@ export function useAmm(account: string | undefined) {
 export function useAddLiquidity() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: addLiquidity,
+    mutationFn: ({ account, body }: { account: string; body: AddLiquidityBody }) =>
+      addLiquidity(account, body),
     onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ammKeys.detail(vars.account) }),
   });
 }
@@ -36,15 +39,27 @@ export function useAddLiquidity() {
 export function useWithdrawLiquidity() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: withdrawLiquidity,
-    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ammKeys.detail(vars.account) }),
+    mutationFn: ({ account, body }: { account: string; body: WithdrawLiquidityBody }) =>
+      withdrawLiquidity(account, body),
+    onSuccess: (data, vars) => {
+      qc.invalidateQueries({ queryKey: ammKeys.detail(vars.account) });
+      if (data.poolDeleted) {
+        qc.invalidateQueries({ queryKey: ammKeys.list() });
+      }
+    },
   });
 }
 
 export function useAmmSwap() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ammSwap,
+    mutationFn: ({
+      account,
+      body,
+    }: {
+      account: string;
+      body: Parameters<typeof ammSwap>[1];
+    }) => ammSwap(account, body),
     onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ammKeys.detail(vars.account) }),
   });
 }

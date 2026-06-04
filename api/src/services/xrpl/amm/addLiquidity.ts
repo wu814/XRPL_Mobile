@@ -1,44 +1,99 @@
-import type { AMMDeposit, Amount, Client, Wallet } from "xrpl";
+import type { AMMDeposit, Client, Wallet } from "xrpl";
 import { handleTransactionError, isTypedTransactionSuccessful } from "../../../lib/errorHandler.js";
+import { type PoolAsset, pickPoolAssets, toAmount, toCurrency } from "./assetSpec.js";
 
-interface AssetSpec {
-  currency: string;
-  issuer: string;
-  value: string;
+export interface AmmPoolAssets {
+  formattedAmount1: PoolAsset;
+  formattedAmount2: PoolAsset;
+  lpToken: { currency: string; issuer: string };
 }
 
-function toAmount(a: AssetSpec): Amount {
-  if (a.currency === "XRP") return Math.floor(Number(a.value) * 1_000_000).toString();
-  return { currency: a.currency, issuer: a.issuer, value: a.value };
-}
-
-function toCurrency(a: AssetSpec) {
-  return a.currency === "XRP" ? { currency: "XRP" } : { currency: a.currency, issuer: a.issuer };
+async function submitDeposit(client: Client, wallet: Wallet, tx: AMMDeposit): Promise<{ hash: string }> {
+  if (!client.isConnected()) await client.connect();
+  const prepared = await client.autofill(tx);
+  const signed = wallet.sign(prepared);
+  const result = await client.submitAndWait<AMMDeposit>(signed.tx_blob);
+  if (!isTypedTransactionSuccessful(result)) {
+    const err = handleTransactionError(result, "AMMDeposit");
+    throw new Error(err.message);
+  }
+  return { hash: result.result.hash };
 }
 
 export async function addLiquidityTwoAsset(
   client: Client,
   wallet: Wallet,
-  amount1: AssetSpec,
-  amount2: AssetSpec,
+  pool: AmmPoolAssets,
+  value1: string,
+  value2: string,
 ): Promise<{ hash: string }> {
-  if (!client.isConnected()) await client.connect();
-
-  const tx: AMMDeposit = {
+  const amount1 = { ...pool.formattedAmount1, value: value1 };
+  const amount2 = { ...pool.formattedAmount2, value: value2 };
+  return submitDeposit(client, wallet, {
     TransactionType: "AMMDeposit",
     Account: wallet.classicAddress,
     Flags: 0x00100000, // tfTwoAsset
     Amount: toAmount(amount1),
     Amount2: toAmount(amount2),
-    Asset: toCurrency(amount1) as never,
-    Asset2: toCurrency(amount2) as never,
-  };
-  const prepared = await client.autofill(tx);
-  const signed = wallet.sign(prepared);
-  const result = await client.submitAndWait<AMMDeposit>(signed.tx_blob);
-  if (!isTypedTransactionSuccessful(result)) {
-    const err = handleTransactionError(result, "addLiquidityTwoAsset");
-    throw new Error(err.message);
-  }
-  return { hash: result.result.hash };
+    Asset: toCurrency(pool.formattedAmount1) as never,
+    Asset2: toCurrency(pool.formattedAmount2) as never,
+  });
+}
+
+export async function addLiquidityTwoAssetLPToken(
+  client: Client,
+  wallet: Wallet,
+  pool: AmmPoolAssets,
+  _value1: string,
+  _value2: string,
+  lpTokenValue: string,
+): Promise<{ hash: string }> {
+  void _value1;
+  void _value2;
+  return submitDeposit(client, wallet, {
+    TransactionType: "AMMDeposit",
+    Account: wallet.classicAddress,
+    Flags: 0x00010000, // tfLPToken
+    Asset: toCurrency(pool.formattedAmount1) as never,
+    Asset2: toCurrency(pool.formattedAmount2) as never,
+    LPTokenOut: { currency: pool.lpToken.currency, issuer: pool.lpToken.issuer, value: lpTokenValue },
+  });
+}
+
+export async function addLiquiditySingleAsset(
+  client: Client,
+  wallet: Wallet,
+  pool: AmmPoolAssets,
+  value: string,
+  selectedCurrency: string,
+): Promise<{ hash: string }> {
+  const { deposit, other } = pickPoolAssets(pool.formattedAmount1, pool.formattedAmount2, selectedCurrency);
+  return submitDeposit(client, wallet, {
+    TransactionType: "AMMDeposit",
+    Account: wallet.classicAddress,
+    Flags: 0x00080000, // tfSingleAsset
+    Asset: toCurrency(deposit) as never,
+    Asset2: toCurrency(other) as never,
+    Amount: toAmount({ ...deposit, value }),
+  });
+}
+
+export async function addLiquidityOneAssetLPToken(
+  client: Client,
+  wallet: Wallet,
+  pool: AmmPoolAssets,
+  value: string,
+  selectedCurrency: string,
+  lpTokenValue: string,
+): Promise<{ hash: string }> {
+  const { deposit, other } = pickPoolAssets(pool.formattedAmount1, pool.formattedAmount2, selectedCurrency);
+  return submitDeposit(client, wallet, {
+    TransactionType: "AMMDeposit",
+    Account: wallet.classicAddress,
+    Flags: 0x00200000, // tfOneAssetLPToken
+    Asset: toCurrency(deposit) as never,
+    Asset2: toCurrency(other) as never,
+    Amount: toAmount({ ...deposit, value }),
+    LPTokenOut: { currency: pool.lpToken.currency, issuer: pool.lpToken.issuer, value: lpTokenValue },
+  });
 }

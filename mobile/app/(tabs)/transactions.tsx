@@ -2,16 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
-  ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { AppScrollView } from "@/src/components/ui/AppScrollView";
+import { Screen } from "@/src/components/ui/Screen";
 import { useWallets } from "@/src/hooks/useWallets";
 import { useAccountTransactions } from "@/src/hooks/useTransactions";
 import { TransactionRow } from "@/src/features/shared/TransactionRow";
-import { shortAddress } from "@/src/lib/formatters";
 import { useAuthStore } from "@/src/stores/auth";
 import type { WalletSummary } from "@/src/api/wallets";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -70,7 +69,7 @@ export default function TransactionsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
+    <Screen>
       <View className="border-b border-white/10 px-6 py-5">
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
@@ -107,16 +106,22 @@ export default function TransactionsScreen() {
                           >
                             {wallet.wallet_type}
                           </Text>
+                          <Text className="mt-0.5 font-mono text-xs text-white/50">
+                            {wallet.classic_address}
+                          </Text>
                         </TouchableOpacity>
                       );
                     })}
                   </View>
                 ) : null}
+                {selectedWallet ? (
+                  <Text className="mt-1 font-mono text-xs text-white/60">
+                    {selectedWallet.classic_address}
+                  </Text>
+                ) : null}
               </View>
             ) : address ? (
-              <Text className="mt-1 font-mono text-xs text-white/60">
-                {shortAddress(address, 12, 8)}
-              </Text>
+              <Text className="mt-1 font-mono text-xs text-white/60">{address}</Text>
             ) : null}
           </View>
           <TouchableOpacity
@@ -131,7 +136,7 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <AppScrollView
         contentContainerClassName="pb-12"
         refreshControl={
           <RefreshControl
@@ -168,7 +173,7 @@ export default function TransactionsScreen() {
             </Text>
           </View>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </AppScrollView>
+    </Screen>
   );
 }

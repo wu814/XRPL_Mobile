@@ -43,6 +43,14 @@ export function formatUsd(value: number): string {
   });
 }
 
+/** USD with leading `$`, placing the minus sign before the currency symbol when negative. */
+export function formatUsdDisplay(value: number): string {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n === 0) return `$${formatUsd(0)}`;
+  if (n < 0) return `-$${formatUsd(Math.abs(n))}`;
+  return `$${formatUsd(n)}`;
+}
+
 export function formatBalance(value: number, maxDecimals = 6): string {
   const num = Number(value);
   if (!Number.isFinite(num)) return "0";

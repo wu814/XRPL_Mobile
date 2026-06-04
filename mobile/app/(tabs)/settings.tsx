@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Screen } from "@/src/components/ui/Screen";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { signOutLocally } from "@/src/lib/authSession";
@@ -30,7 +30,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
+    <Screen>
       <View className="flex-1 px-6 py-8">
         <Text className="mb-6 text-3xl font-bold text-white">Settings</Text>
 
@@ -61,6 +61,6 @@ export default function SettingsScreen() {
           )}
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }

@@ -22,14 +22,16 @@ import {
   DexPairDropdownTrigger,
   DexPairSelectorSheet,
 } from "@/src/features/dex/DexPairSelectorSheet";
+import { missingDexWalletMessage } from "@/src/lib/featureWallet";
 
 interface DexPlaceOrderProps {
   walletAddress: string | null;
+  isAdmin?: boolean;
   pair: DexCurrencyPair | null;
   onPairChange: (base: string, quote: string) => void;
 }
 
-export function DexPlaceOrder({ walletAddress, pair, onPairChange }: DexPlaceOrderProps) {
+export function DexPlaceOrder({ walletAddress, isAdmin = false, pair, onPairChange }: DexPlaceOrderProps) {
   const createMut = useCreateOffer();
   const [side, setSide] = useState<DexOrderSide>("buy");
   const [limitPrice, setLimitPrice] = useState("");
@@ -56,7 +58,7 @@ export function DexPlaceOrder({ walletAddress, pair, onPairChange }: DexPlaceOrd
 
   const onSubmit = async () => {
     if (!walletAddress) {
-      return Alert.alert("Pathfind wallet", "Create a pathfind wallet before placing orders.");
+      return Alert.alert("Wallet", missingDexWalletMessage(isAdmin));
     }
     if (!pair?.issuerAddress) return Alert.alert("Issuer", "No issuer wallet on Testnet yet");
     const price = Number(limitPrice);
@@ -93,9 +95,9 @@ export function DexPlaceOrder({ walletAddress, pair, onPairChange }: DexPlaceOrd
   return (
     <View className="flex-1 rounded-2xl border border-white/10 bg-white/5 p-3">
       <Text className="mb-2 text-xs font-semibold text-white">Place order</Text>
-      {!canPlace ? (
+      {isAdmin && !canPlace ? (
         <Text className="mb-3 text-[10px] leading-4 text-amber-200/90">
-          Orders are placed from the pathfind wallet. Create one on the admin Home screen.
+          {missingDexWalletMessage(isAdmin)}
         </Text>
       ) : null}
 

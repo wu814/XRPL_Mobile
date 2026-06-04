@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { AppScrollView } from "@/src/components/ui/AppScrollView";
+import { Screen } from "@/src/components/ui/Screen";
 import * as WebBrowser from "expo-web-browser";
 import { supabase } from "@/src/lib/supabase";
 import { createSessionFromUrl, getOAuthRedirectUri } from "@/src/lib/authSession";
@@ -78,8 +79,8 @@ export default function SignIn() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <View className="flex-1 items-center justify-center px-8">
+    <Screen>
+      <AppScrollView contentContainerClassName="grow items-center justify-center px-8 py-8">
         <Text className="mb-2 text-5xl font-extrabold text-primary">XRPL</Text>
         <Text className="mb-12 text-base text-white/70">Custodial Testnet demo</Text>
 
@@ -122,7 +123,7 @@ export default function SignIn() {
             <Text className="text-base font-semibold text-white">Email me a magic link</Text>
           )}
         </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </AppScrollView>
+    </Screen>
   );
 }

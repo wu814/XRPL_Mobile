@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { createWallet } from "../services/xrpl/wallet/createWallet.js";
-import { getAccountInfo, getAccountLines } from "../services/xrpl/wallet/getWalletInfo.js";
+import { getAccountInfo, getAccountLines, getGatewayObligations } from "../services/xrpl/wallet/getWalletInfo.js";
 import { authorizeDeposit } from "../services/xrpl/wallet/authorizeDeposit.js";
 import {
   setIssuerWalletFlags,
@@ -175,6 +175,25 @@ export async function walletRoutes(app: FastifyInstance) {
 
     const client = await app.ensureXrplConnected();
     return getAccountLines(client, params.data.address);
+  });
+
+  app.get("/:address/obligations", async (req) => {
+    await app.requireAuth(req);
+    const params = addressParam.safeParse(req.params);
+    if (!params.success) throw new HttpError(400, "Invalid address");
+
+    const { walletType } = await loadWalletByAddress(app.supabase, params.data.address);
+    if (walletType !== "issuer") {
+      throw new HttpError(400, "Obligations are only available for issuer wallets");
+    }
+
+    const client = await app.ensureXrplConnected();
+    try {
+      const obligations = await getGatewayObligations(client, params.data.address);
+      return { obligations };
+    } catch (err) {
+      throw new HttpError(502, (err as Error).message);
+    }
   });
 
   app.post("/:address/authorize-deposit", async (req) => {

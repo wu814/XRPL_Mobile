@@ -1,8 +1,11 @@
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Text, View } from "react-native";
+import { AppScrollView } from "@/src/components/ui/AppScrollView";
+import { Screen } from "@/src/components/ui/Screen";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useWalletInfo, useWalletLines } from "@/src/hooks/useWallets";
-import { decodeCurrency, dropsToXrp, formatXrp, shortAddress } from "@/src/lib/formatters";
+import { dropsToXrp, formatXrp } from "@/src/lib/formatters";
+import { TrustlineRowCard } from "@/src/features/wallet/TrustlineRowCard";
+import type { TrustlineRow } from "@/src/lib/walletAssets";
 
 export default function WalletDetail() {
   const { address } = useLocalSearchParams<{ address: string }>();
@@ -10,11 +13,11 @@ export default function WalletDetail() {
   const lines = useWalletLines(address);
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
+    <Screen>
       <Stack.Screen options={{ title: "Wallet", headerStyle: { backgroundColor: "#000" }, headerTintColor: "#fff" }} />
-      <ScrollView contentContainerClassName="px-6 py-6">
+      <AppScrollView contentContainerClassName="px-6 py-6">
         <Text className="mb-1 text-xs uppercase tracking-wider text-white/50">Address</Text>
-        <Text className="mb-6 font-mono text-sm text-white">{shortAddress(address ?? "", 14, 8)}</Text>
+        <Text className="mb-6 font-mono text-sm text-white">{address ?? ""}</Text>
 
         <View className="mb-6 rounded-2xl border border-white/10 p-5">
           <Text className="mb-1 text-sm uppercase tracking-wider text-white/50">Balance</Text>
@@ -35,18 +38,13 @@ export default function WalletDetail() {
         ) : lines.error ? (
           <Text className="text-danger">{(lines.error as Error).message}</Text>
         ) : lines.data && lines.data.length > 0 ? (
-          lines.data.map((l: any, idx: number) => (
-            <View key={idx} className="mb-3 rounded-2xl border border-white/10 p-4">
-              <Text className="mb-1 text-base text-white">
-                {decodeCurrency(l.currency)} - {l.balance}
-              </Text>
-              <Text className="text-xs text-white/50">Issuer: {shortAddress(l.account)}</Text>
-            </View>
+          lines.data.map((l: TrustlineRow, idx: number) => (
+            <TrustlineRowCard key={`${l.currency}-${l.account}-${idx}`} line={l} />
           ))
         ) : (
           <Text className="text-white/50">No trustlines</Text>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </AppScrollView>
+    </Screen>
   );
 }

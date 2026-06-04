@@ -3,12 +3,12 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AppScrollView } from "@/src/components/ui/AppScrollView";
 
 interface AppSheetProps {
   visible: boolean;
@@ -26,14 +26,12 @@ export function AppSheet({
   onClose,
   title,
   headerExtra,
-  keyboardAvoiding = false,
+  keyboardAvoiding = true,
   scrollable = true,
   children,
 }: AppSheetProps) {
   const body = scrollable ? (
-    <ScrollView contentContainerClassName="px-6 py-5" keyboardShouldPersistTaps="handled">
-      {children}
-    </ScrollView>
+    <AppScrollView contentContainerClassName="px-6 py-5">{children}</AppScrollView>
   ) : (
     <View className="flex-1 px-6 py-5">{children}</View>
   );
@@ -63,7 +61,7 @@ export function AppSheet({
       <SafeAreaView className="flex-1 bg-black">
         {keyboardAvoiding ? (
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             className="flex-1"
           >
             {content}

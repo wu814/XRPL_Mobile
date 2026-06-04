@@ -3,6 +3,7 @@ import {
   STATIC_PRICES,
   getUsdValue,
 } from "@/src/lib/prices";
+import { decodeCurrency } from "@/src/lib/formatters";
 
 export interface WalletAsset {
   id: string;
@@ -90,6 +91,34 @@ export function buildWalletAssets(input: {
   }
 
   return out;
+}
+
+/** Issuer portfolio: outstanding issued IOUs shown as negative balances/USD values. */
+export function buildIssuerWalletAssets(input: {
+  address: string;
+  obligations: Record<string, string> | undefined;
+}): WalletAsset[] {
+  const { address, obligations } = input;
+  if (!obligations) return [];
+
+  const out: WalletAsset[] = [];
+  for (const [rawCurrency, rawAmount] of Object.entries(obligations)) {
+    const issued = parseFloat(rawAmount);
+    if (!Number.isFinite(issued) || issued <= 0) continue;
+    const currency = decodeCurrency(rawCurrency);
+    const balance = -issued;
+    out.push({
+      id: `issued-${currency}-${address}`,
+      currency,
+      balance,
+      value: getUsdValue(currency, balance, STATIC_PRICES),
+      change24h: STATIC_CHANGE_24H[currency] ?? "0",
+      issuer: address,
+      walletAddress: address,
+    });
+  }
+
+  return out.sort((a, b) => a.currency.localeCompare(b.currency));
 }
 
 export function totalUsdForAssets(assets: WalletAsset[]): number {

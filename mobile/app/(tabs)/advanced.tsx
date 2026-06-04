@@ -1,5 +1,6 @@
-import { Image, ImageSourcePropType, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Image, ImageSourcePropType, Text, TouchableOpacity, View } from "react-native";
+import { AppScrollView } from "@/src/components/ui/AppScrollView";
+import { Screen } from "@/src/components/ui/Screen";
 import { useRouter } from "expo-router";
 
 interface Card {
@@ -34,8 +35,8 @@ export default function AdvancedScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <ScrollView contentContainerClassName="px-6 py-6">
+    <Screen>
+      <AppScrollView contentContainerClassName="px-6 py-6">
         <Text className="mb-1 text-3xl font-bold text-white">Advanced</Text>
         <Text className="mb-6 text-white/60">Pro tools for XRPL trading</Text>
 
@@ -55,7 +56,7 @@ export default function AdvancedScreen() {
             <Text className="text-2xl text-white/40">›</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
-    </SafeAreaView>
+      </AppScrollView>
+    </Screen>
   );
 }

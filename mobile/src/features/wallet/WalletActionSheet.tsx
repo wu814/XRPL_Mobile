@@ -318,11 +318,7 @@ export function WalletActionSheet({
             {action !== "set_trustline" ? (
               <>
                 <Text className="mb-1 text-xs uppercase tracking-wider text-white/50">Wallet</Text>
-                <Text
-                  className="mb-5 font-mono text-xs text-white/70"
-                  numberOfLines={1}
-                  ellipsizeMode="middle"
-                >
+                <Text className="mb-5 font-mono text-xs text-white/70">
                   {wallet.classic_address}
                 </Text>
               </>

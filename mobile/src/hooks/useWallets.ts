@@ -9,6 +9,7 @@ import {
   deleteWallet,
   getWalletInfo,
   getWalletLines,
+  getWalletObligations,
   listWallets,
   type WalletSummary,
 } from "@/src/api/wallets";
@@ -18,6 +19,7 @@ export const walletKeys = {
   list: () => [...walletKeys.all, "list"] as const,
   info: (address: string) => [...walletKeys.all, "info", address] as const,
   lines: (address: string) => [...walletKeys.all, "lines", address] as const,
+  obligations: (address: string) => [...walletKeys.all, "obligations", address] as const,
 };
 
 export function useWallets(): UseQueryResult<WalletSummary[]> {
@@ -52,6 +54,14 @@ export function useWalletLines(address: string | undefined) {
   return useQuery({
     queryKey: walletKeys.lines(address ?? ""),
     queryFn: () => getWalletLines(address!),
+    enabled: !!address,
+  });
+}
+
+export function useWalletObligations(address: string | undefined) {
+  return useQuery({
+    queryKey: walletKeys.obligations(address ?? ""),
+    queryFn: () => getWalletObligations(address!),
     enabled: !!address,
   });
 }

@@ -1,14 +1,13 @@
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   RefreshControl,
-  ScrollView,
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useCreateWallet, useWallets } from "@/src/hooks/useWallets";
+import { AppScrollView } from "@/src/components/ui/AppScrollView";
+import { Screen } from "@/src/components/ui/Screen";
+import { useCreateWallet, useWalletObligations, useWallets } from "@/src/hooks/useWallets";
 import { useAllWalletAssets } from "@/src/hooks/useAllWalletAssets";
 import { CreateAdminWalletCard } from "@/src/features/wallet/WalletSummaryCard";
 import { WalletCardContainer } from "@/src/features/wallet/WalletCardContainer";
@@ -16,13 +15,18 @@ import { CreateAdminWalletModal } from "@/src/features/wallet/CreateAdminWalletM
 import { AssetTable } from "@/src/features/shared/AssetTable";
 import { SmartTradeSheet } from "@/src/features/payments/SmartTradeSheet";
 import { SendSheet } from "@/src/features/payments/SendSheet";
-import { formatUsd } from "@/src/lib/prices";
+import { formatUsdDisplay } from "@/src/lib/prices";
+import { buildIssuerWalletAssets, totalUsdForAssets } from "@/src/lib/walletAssets";
 import type { WalletSummary } from "@/src/api/wallets";
 import { StickyActions } from "./StickyActions";
 
 export function AdminHome() {
   const wallets = useWallets();
   const createMutation = useCreateWallet();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSmartTrade, setShowSmartTrade] = useState(false);
+  const [showSend, setShowSend] = useState(false);
+  const [sendingFrom, setSendingFrom] = useState<WalletSummary | null>(null);
 
   const sortedWallets = useMemo<WalletSummary[]>(() => {
     const data = wallets.data ?? [];
@@ -31,17 +35,6 @@ export function AdminHome() {
       (a, b) => (order[a.wallet_type] ?? 99) - (order[b.wallet_type] ?? 99),
     );
   }, [wallets.data]);
-
-  const addresses = useMemo(
-    () => sortedWallets.map((w) => w.classic_address),
-    [sortedWallets],
-  );
-  const aggregate = useAllWalletAssets(addresses);
-
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showSmartTrade, setShowSmartTrade] = useState(false);
-  const [showSend, setShowSend] = useState(false);
-  const [sendingFrom, setSendingFrom] = useState<WalletSummary | null>(null);
 
   const portfolioWallets = useMemo(
     () =>
@@ -54,39 +47,80 @@ export function AdminHome() {
     [sortedWallets],
   );
 
+  const issuerWallet = useMemo(
+    () => portfolioWallets.find((w) => w.wallet_type === "issuer") ?? null,
+    [portfolioWallets],
+  );
+
+  const nonIssuerAddresses = useMemo(
+    () =>
+      portfolioWallets
+        .filter((w) => w.wallet_type !== "issuer")
+        .map((w) => w.classic_address),
+    [portfolioWallets],
+  );
+
+  const aggregate = useAllWalletAssets(nonIssuerAddresses);
+  const issuerObligations = useWalletObligations(issuerWallet?.classic_address);
+
+  const issuerAssets = useMemo(
+    () =>
+      buildIssuerWalletAssets({
+        address: issuerWallet?.classic_address ?? "",
+        obligations: issuerObligations.data?.obligations,
+      }),
+    [issuerWallet?.classic_address, issuerObligations.data?.obligations],
+  );
+
+  const totalUsd = useMemo(() => totalUsdForAssets(issuerAssets), [issuerAssets]);
+
+  const portfolioLoading =
+    aggregate.isLoading || (!!issuerWallet && issuerObligations.isLoading);
+
+  const treasuryWallet = useMemo(
+    () => sortedWallets.find((w) => w.wallet_type === "treasury") ?? null,
+    [sortedWallets],
+  );
+
+  const defaultSendWallet = sendingFrom ?? treasuryWallet ?? sortedWallets[0] ?? null;
+
   const assetsByWallet = useMemo(() => {
     const map = new Map<string, typeof aggregate.assets>();
     for (const wallet of portfolioWallets) {
-      map.set(
-        wallet.classic_address,
-        aggregate.assets.filter((a) => a.walletAddress === wallet.classic_address),
-      );
+      if (wallet.wallet_type === "issuer") {
+        map.set(wallet.classic_address, issuerAssets);
+      } else {
+        map.set(
+          wallet.classic_address,
+          aggregate.assets.filter((a) => a.walletAddress === wallet.classic_address),
+        );
+      }
     }
     return map;
-  }, [portfolioWallets, aggregate.assets]);
-
-  const treasury = sortedWallets.find((w) => w.wallet_type === "treasury");
-  const defaultSendWallet = sendingFrom ?? treasury ?? sortedWallets[0] ?? null;
+  }, [portfolioWallets, issuerAssets, aggregate.assets]);
 
   const onRefresh = async () => {
-    await Promise.all([wallets.refetch(), aggregate.refetch()]);
+    await Promise.all([wallets.refetch(), aggregate.refetch(), issuerObligations.refetch()]);
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <ScrollView
+    <Screen>
+      <AppScrollView
         contentContainerClassName="px-6 pt-6 pb-32"
         refreshControl={
           <RefreshControl
-            refreshing={wallets.isFetching || aggregate.isLoading}
+            refreshing={wallets.isFetching || portfolioLoading}
             onRefresh={onRefresh}
             tintColor="#fff"
           />
         }
       >
         <Text className="text-base font-semibold text-white/70">Total Balance</Text>
-        <Text className="mb-8 mt-1 text-5xl font-bold text-white">
-          ${formatUsd(aggregate.totalUsd)}
+        <Text className="mb-1 mt-1 text-5xl font-bold text-white">
+          {formatUsdDisplay(totalUsd)}
+        </Text>
+        <Text className="mb-8 text-xs text-white/45">
+          Issued token liability (USD)
         </Text>
 
         <Text className="mb-3 text-xl font-bold text-white">My Wallets</Text>
@@ -98,7 +132,7 @@ export function AdminHome() {
           <Text className="text-danger">{(wallets.error as Error).message}</Text>
         ) : (
           <>
-            {sortedWallets.map((w) => (
+            {portfolioWallets.map((w) => (
               <WalletCardContainer
                 key={w.id}
                 wallet={w}
@@ -108,6 +142,7 @@ export function AdminHome() {
                 }}
               />
             ))}
+
             <CreateAdminWalletCard
               onPress={() => setShowCreateModal(true)}
               isCreating={createMutation.isPending}
@@ -117,19 +152,19 @@ export function AdminHome() {
 
         <Text className="mb-3 mt-8 text-xl font-bold text-white">Portfolio</Text>
         {portfolioWallets.length === 0 ? (
-          <AssetTable assets={[]} loading={aggregate.isLoading} />
+          <AssetTable assets={[]} loading={portfolioLoading} />
         ) : (
           portfolioWallets.map((wallet) => (
             <View key={wallet.id} className="mb-6">
               <AssetTable
                 title={wallet.wallet_type.toUpperCase()}
                 assets={assetsByWallet.get(wallet.classic_address) ?? []}
-                loading={aggregate.isLoading}
+                loading={portfolioLoading}
               />
             </View>
           ))
         )}
-      </ScrollView>
+      </AppScrollView>
 
       <StickyActions
         canAct={!!defaultSendWallet}
@@ -163,6 +198,6 @@ export function AdminHome() {
         }}
         walletAddress={defaultSendWallet?.classic_address ?? null}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }

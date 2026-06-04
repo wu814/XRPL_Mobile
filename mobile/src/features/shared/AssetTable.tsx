@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { CurrencyIconImage, LpTokenIcon } from "./CurrencyIconImage";
-import { formatBalance, formatUsd } from "@/src/lib/prices";
-import { shortAddress } from "@/src/lib/formatters";
+import { isLpTokenCurrency } from "@/src/lib/formatters";
+import { formatBalance, formatUsdDisplay } from "@/src/lib/prices";
 import type { WalletAsset } from "@/src/lib/walletAssets";
 import { useLpPairCurrencies } from "@/src/hooks/useLpPairCurrencies";
 
@@ -13,13 +13,13 @@ interface AssetTableProps {
 }
 
 function isLpToken(asset: WalletAsset): boolean {
-  return !!asset.currency && asset.currency.length === 40;
+  return isLpTokenCurrency(asset.currency);
 }
 
 function displayName(asset: WalletAsset, pair: { currencyA: string; currencyB: string } | null): string {
   if (isLpToken(asset)) {
     if (pair) return `${pair.currencyA} / ${pair.currencyB} LP`;
-    return `LP Token (${asset.currency.substring(0, 8)}…)`;
+    return `LP Token (${asset.currency})`;
   }
   return asset.currency;
 }
@@ -75,8 +75,6 @@ export function AssetTable({ assets, loading, title = "Assets" }: AssetTableProp
       ) : (
         assets.map((asset) => {
           const isExp = expanded.has(asset.id);
-          const change = parseFloat(asset.change24h) || 0;
-          const positive = change >= 0;
           const lp = isLpToken(asset);
           return (
             <View key={asset.id}>
@@ -105,13 +103,7 @@ export function AssetTable({ assets, loading, title = "Assets" }: AssetTableProp
                 </View>
                 <View className="items-end">
                   <Text className="text-base font-semibold text-white">
-                    ${formatUsd(asset.value || 0)}
-                  </Text>
-                  <Text
-                    className={`text-xs ${positive ? "text-green-400" : "text-red-400"}`}
-                  >
-                    {positive ? "+" : ""}
-                    {change.toFixed(2)}%
+                    {formatUsdDisplay(asset.value || 0)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -122,7 +114,7 @@ export function AssetTable({ assets, loading, title = "Assets" }: AssetTableProp
                     <View className="mb-1 flex-row">
                       <Text className="mr-2 text-xs text-white/50">Issuer:</Text>
                       <Text className="flex-1 font-mono text-xs text-white">
-                        {shortAddress(asset.issuer, 14, 8)}
+                        {asset.issuer}
                       </Text>
                     </View>
                   ) : null}
@@ -130,7 +122,7 @@ export function AssetTable({ assets, loading, title = "Assets" }: AssetTableProp
                     <View className="flex-row">
                       <Text className="mr-2 text-xs text-white/50">Wallet:</Text>
                       <Text className="flex-1 font-mono text-xs text-white">
-                        {shortAddress(asset.walletAddress, 14, 8)}
+                        {asset.walletAddress}
                       </Text>
                     </View>
                   ) : null}
