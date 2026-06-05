@@ -12,6 +12,7 @@ import { ammSwap, getAmmInfoByCurrencies, type AmmInfo } from "@/src/api/amm";
 import { poolIssuerAddress } from "@/src/lib/estimateDepositAmount";
 import { availableCurrencies } from "@/src/lib/currencyIcon";
 import { AppSheet } from "@/src/components/ui/AppSheet";
+import { IconSymbol } from "@/src/components/ui/icon-symbol";
 import { CurrencyIconImage } from "@/src/features/shared/CurrencyIconImage";
 import { calculateEstimateOutput, calculateExactAMMInput } from "@/src/lib/ammCalculations";
 import { formatBalance } from "@/src/lib/prices";
@@ -285,7 +286,7 @@ export function SmartTradeSheet({
                 onPress={onSwap}
                 className="h-12 w-12 items-center justify-center rounded-full border-2 border-black bg-white/15"
               >
-                <Text className="text-lg text-white">↕</Text>
+                <IconSymbol name="arrow.up.arrow.down" size={20} color="#fff" />
               </TouchableOpacity>
             </View>
 

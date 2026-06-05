@@ -7,6 +7,10 @@ import {
   type IssuedCurrencyAmount,
   type Payment,
   type TrustSet,
+  type DepositPreauth,
+  type OracleSet,
+  type OracleDelete,
+  type AccountSet,
   type OfferCreate,
   type OfferCancel,
   type Clawback,
@@ -175,12 +179,93 @@ function processPayment(tx: Payment, meta: TransactionMetadata, target: string) 
   }
 }
 
+const TF_SET_AUTH = 0x00010000;
+const TF_SET_FREEZE = 0x00100000;
+const TF_CLEAR_FREEZE = 0x00200000;
+const TF_SET_DEEP_FREEZE = 0x00400000;
+const TF_CLEAR_DEEP_FREEZE = 0x00800000;
+
 function processTrustSet(tx: TrustSet) {
+  const flags = Number(tx.Flags ?? 0);
+  const currency = tx.LimitAmount?.currency || "";
+  const counterparty = tx.LimitAmount?.issuer || null;
+  const limitStr = tx.LimitAmount ? `${tx.LimitAmount.value} ${currency}` : "Remove trustline";
+
+  if (flags & TF_SET_AUTH) {
+    return {
+      direction: "authorize_trustline",
+      counterparty,
+      amount: currency ? `Authorize ${currency}` : "Authorize trustline",
+      currency,
+    };
+  }
+  if (flags & TF_CLEAR_FREEZE || flags & TF_CLEAR_DEEP_FREEZE) {
+    return {
+      direction: "trustline_unfreeze",
+      counterparty,
+      amount: currency ? `Unfreeze ${currency}` : "Unfreeze trustline",
+      currency,
+    };
+  }
+  if (flags & TF_SET_DEEP_FREEZE) {
+    return {
+      direction: "deep_freeze",
+      counterparty,
+      amount: currency ? `Deep freeze ${currency}` : "Deep freeze",
+      currency,
+    };
+  }
+  if (flags & TF_SET_FREEZE) {
+    return {
+      direction: "trustline_freeze",
+      counterparty,
+      amount: currency ? `Freeze ${currency}` : "Freeze trustline",
+      currency,
+    };
+  }
   return {
     direction: "trustline_set",
-    counterparty: tx.LimitAmount?.issuer || null,
-    amount: tx.LimitAmount ? `${tx.LimitAmount.value} ${tx.LimitAmount.currency}` : "Remove trustline",
-    currency: tx.LimitAmount?.currency || "",
+    counterparty,
+    amount: tx.LimitAmount ? limitStr : "Remove trustline",
+    currency,
+  };
+}
+
+function processDepositPreauth(tx: DepositPreauth) {
+  const authorized =
+    typeof tx.Authorize === "string" ? tx.Authorize : null;
+  return {
+    direction: "deposit_preauth",
+    counterparty: authorized,
+    amount: "Deposit authorized",
+    currency: "",
+  };
+}
+
+function processOracleSet(tx: OracleSet) {
+  return {
+    direction: "oracle_set",
+    counterparty: null as string | null,
+    amount: `Document #${tx.OracleDocumentID ?? "?"}`,
+    currency: "",
+  };
+}
+
+function processOracleDelete(tx: OracleDelete) {
+  return {
+    direction: "oracle_delete",
+    counterparty: null as string | null,
+    amount: `Document #${tx.OracleDocumentID ?? "?"}`,
+    currency: "",
+  };
+}
+
+function processAccountSet(_tx: AccountSet) {
+  return {
+    direction: "account_set",
+    counterparty: null as string | null,
+    amount: "Account updated",
+    currency: "",
   };
 }
 
@@ -235,32 +320,23 @@ function processNFTAcceptOffer(tx: NFTokenAcceptOffer) {
   };
 }
 
-export async function getAccountTransactions(
-  client: Client,
-  targetAddress: string,
-  limit: number = 50,
-  marker: string | null = null,
-): Promise<GetAccountTransactionsResult> {
-  if (!targetAddress) throw new Error("Missing address");
-  if (!client.isConnected()) await client.connect();
-
-  const requestParams: AccountTxRequest = {
-    command: "account_tx",
-    account: targetAddress,
-    binary: false,
-    limit: Math.min(limit, 30),
-    forward: false,
-    ...(marker && { marker: marker as any }),
-  };
-
-  const response: AccountTxResponse = await client.request(requestParams);
-
-  if (!response.result?.transactions) {
-    return { transactions: [], marker: null, message: "No transaction data available" };
+/**
+ * xrpl_mvp returns all account_tx results. The only extra rule here: drop DEX
+ * OfferCreate/OfferCancel entries submitted by another wallet (common on issuer
+ * accounts when pathfind lists IOUs they issue).
+ */
+function shouldIncludeInAccountHistory(tx: Transaction, targetAddress: string): boolean {
+  const type = tx.TransactionType;
+  if (type === "OfferCreate" || type === "OfferCancel") {
+    return tx.Account === targetAddress;
   }
+  return true;
+}
 
-  const processed = response.result.transactions
-    .map((txData: AccountTxTransaction): ProcessedTransaction | null => {
+function processTransactionEntry(
+  txData: AccountTxTransaction,
+  targetAddress: string,
+): ProcessedTransaction | null {
       try {
         const typed = getTypedTransaction(txData);
         if (!typed) return null;
@@ -288,6 +364,26 @@ export async function getAccountTransactions(
           }
           case "TrustSet": {
             const r = processTrustSet(tx as TrustSet);
+            ({ direction, counterparty, amount, currency } = r);
+            break;
+          }
+          case "DepositPreauth": {
+            const r = processDepositPreauth(tx as DepositPreauth);
+            ({ direction, counterparty, amount, currency } = r);
+            break;
+          }
+          case "OracleSet": {
+            const r = processOracleSet(tx as OracleSet);
+            ({ direction, counterparty, amount, currency } = r);
+            break;
+          }
+          case "OracleDelete": {
+            const r = processOracleDelete(tx as OracleDelete);
+            ({ direction, counterparty, amount, currency } = r);
+            break;
+          }
+          case "AccountSet": {
+            const r = processAccountSet(tx as AccountSet);
             ({ direction, counterparty, amount, currency } = r);
             break;
           }
@@ -363,11 +459,60 @@ export async function getAccountTransactions(
       } catch {
         return null;
       }
-    })
+}
+
+export async function getAccountTransactions(
+  client: Client,
+  targetAddress: string,
+  limit: number = 50,
+  marker: string | null = null,
+): Promise<GetAccountTransactionsResult> {
+  if (!targetAddress) throw new Error("Missing address");
+  if (!client.isConnected()) await client.connect();
+
+  const targetLimit = Math.min(limit, 30);
+  const collected: AccountTxTransaction[] = [];
+  let nextMarker: string | null = marker;
+  let returnMarker: string | null = null;
+  // When the first page is mostly pathfind offers, walk further back (xrpl_mvp shows one page only).
+  const maxPages = marker ? 1 : 5;
+
+  for (let page = 0; page < maxPages && collected.length < targetLimit; page++) {
+    const requestParams: AccountTxRequest = {
+      command: "account_tx",
+      account: targetAddress,
+      binary: false,
+      limit: 30,
+      forward: false,
+      ...(nextMarker && { marker: nextMarker as AccountTxRequest["marker"] }),
+    };
+
+    const response: AccountTxResponse = await client.request(requestParams);
+    const batch = response.result?.transactions ?? [];
+    if (batch.length === 0) break;
+
+    for (const txData of batch) {
+      const typed = getTypedTransaction(txData);
+      if (!typed || !shouldIncludeInAccountHistory(typed.tx, targetAddress)) continue;
+      collected.push(txData);
+      if (collected.length >= targetLimit) break;
+    }
+
+    returnMarker = (response.result?.marker as string | undefined) ?? null;
+    if (!returnMarker || collected.length >= targetLimit) break;
+    nextMarker = returnMarker;
+  }
+
+  if (collected.length === 0) {
+    return { transactions: [], marker: null, message: "No transaction data available" };
+  }
+
+  const processed = collected
+    .map((txData) => processTransactionEntry(txData, targetAddress))
     .filter((t): t is ProcessedTransaction => t !== null);
 
   return {
     transactions: processed,
-    marker: (response.result.marker as string | undefined) || null,
+    marker: collected.length >= targetLimit ? returnMarker : null,
   };
 }
