@@ -1,24 +1,19 @@
 /**
- * Static USD prices for the Testnet demo. Mirrors the mobile app's hardcoded
- * values (mobile/src/lib/prices.ts) so welcome-bonus amounts line up with the
- * balances shown in the UI. Used as a fallback when no on-chain price oracle
- * is available.
+ * Static USD prices for the Testnet demo. Used as a fallback when no on-chain
+ * price oracle is available. Mobile reads live/static prices via GET /oracle/prices.
  */
-interface StaticPrice {
-  baseAsset: string;
-  price: number;
-}
+export const SUPPORTED_CURRENCIES = ["USD", "XRP", "EUR", "BTC", "ETH", "SOL"] as const;
 
-const STATIC_PRICES: StaticPrice[] = [
-  { baseAsset: "USD", price: 1 },
-  { baseAsset: "XRP", price: 1.34 },
-  { baseAsset: "EUR", price: 1.16 },
-  { baseAsset: "BTC", price: 97969 },
-  { baseAsset: "ETH", price: 2072.65 },
-  { baseAsset: "SOL", price: 84.12 },
-];
+const STATIC_PRICES: Record<(typeof SUPPORTED_CURRENCIES)[number], number> = {
+  USD: 1,
+  XRP: 1.34,
+  EUR: 1.16,
+  BTC: 97969,
+  ETH: 2072.65,
+  SOL: 84.12,
+};
 
 export function staticPriceUSD(currency: string): number | null {
-  const found = STATIC_PRICES.find((p) => p.baseAsset === currency);
-  return found ? found.price : null;
+  if (!(currency in STATIC_PRICES)) return null;
+  return STATIC_PRICES[currency as keyof typeof STATIC_PRICES];
 }

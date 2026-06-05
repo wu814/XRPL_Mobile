@@ -7,6 +7,7 @@ import { authorizeTrustline } from "../services/xrpl/trustline/authorizeTrustlin
 import { freezeTrustline } from "../services/xrpl/trustline/freezeTrustline.js";
 import {
   awardWelcomeBonus,
+  issuerRequiresAuth,
   type WelcomeBonusInfo,
 } from "../services/xrpl/wallet/awardWelcomeBonus.js";
 
@@ -66,10 +67,38 @@ export async function trustlineRoutes(app: FastifyInstance) {
       parse.data.limit,
     );
 
-    // Award a one-time welcome gift when a regular user first trusts a token
+    // Auto-authorize the holder's trustline when the issuer requires auth.
+    // Never fails the trustline request — bonus/send flows retry if needed.
+    if (parse.data.currency.length < 10) {
+      try {
+        if (await issuerRequiresAuth(client, parse.data.issuer)) {
+          const { wallet: issuerWallet } = await loadWalletByAddress(
+            app.supabase,
+            parse.data.issuer,
+          );
+          await authorizeTrustline(
+            client,
+            issuerWallet,
+            parse.data.currency,
+            wallet.classicAddress,
+          );
+        }
+      } catch (err) {
+        req.log.warn(
+          { err: (err as Error).message, currency: parse.data.currency },
+          "Auto-authorize trustline failed after setTrustline",
+        );
+      }
+    }
+
+    // Award a one-time sign-in bonus when a regular user first trusts a token
     // (mirrors xrpl_mvp). Never fails the trustline request.
     let welcomeBonus: WelcomeBonusInfo | undefined;
-    if (walletType === "user" && parse.data.currency !== "XRP") {
+    if (
+      walletType === "user" &&
+      parse.data.currency !== "XRP" &&
+      parse.data.currency.length < 10
+    ) {
       welcomeBonus = await awardWelcomeBonus({
         client,
         supabase: app.supabase,

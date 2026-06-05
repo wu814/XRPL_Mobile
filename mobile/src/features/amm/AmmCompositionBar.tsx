@@ -1,4 +1,5 @@
 import { ActivityIndicator, Text, View } from "react-native";
+import { useLivePrices } from "@/src/hooks/useLivePrices";
 import { decodeCurrency } from "@/src/lib/formatters";
 import { formatBalance, formatUsdDisplay, getUsdValue } from "@/src/lib/prices";
 
@@ -14,7 +15,9 @@ interface AmmCompositionBarProps {
 }
 
 export function AmmCompositionBar({ amount1, amount2, loading }: AmmCompositionBarProps) {
-  if (loading || !amount1 || !amount2) {
+  const { prices, isLoading: pricesLoading } = useLivePrices();
+
+  if (loading || pricesLoading || !amount1 || !amount2) {
     return (
       <View className="py-2">
         <View className="h-2 w-full overflow-hidden rounded-full bg-white/10" />
@@ -30,8 +33,8 @@ export function AmmCompositionBar({ amount1, amount2, loading }: AmmCompositionB
   const c1 = decodeCurrency(amount1.currency);
   const c2 = decodeCurrency(amount2.currency);
 
-  const usd1 = getUsdValue(c1, v1);
-  const usd2 = getUsdValue(c2, v2);
+  const usd1 = getUsdValue(c1, v1, prices);
+  const usd2 = getUsdValue(c2, v2, prices);
   const totalUsd = usd1 + usd2;
   const pct1 = totalUsd > 0 ? (usd1 / totalUsd) * 100 : 50;
   const pct2 = 100 - pct1;

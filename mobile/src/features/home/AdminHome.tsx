@@ -9,6 +9,7 @@ import { AppScrollView } from "@/src/components/ui/AppScrollView";
 import { Screen } from "@/src/components/ui/Screen";
 import { useCreateWallet, useWalletObligations, useWallets } from "@/src/hooks/useWallets";
 import { useAllWalletAssets } from "@/src/hooks/useAllWalletAssets";
+import { useLivePrices } from "@/src/hooks/useLivePrices";
 import { CreateAdminWalletCard } from "@/src/features/wallet/WalletSummaryCard";
 import { WalletCardContainer } from "@/src/features/wallet/WalletCardContainer";
 import { CreateAdminWalletModal } from "@/src/features/wallet/CreateAdminWalletModal";
@@ -60,6 +61,7 @@ export function AdminHome() {
     [portfolioWallets],
   );
 
+  const livePrices = useLivePrices();
   const aggregate = useAllWalletAssets(nonIssuerAddresses);
   const issuerObligations = useWalletObligations(issuerWallet?.classic_address);
 
@@ -68,14 +70,17 @@ export function AdminHome() {
       buildIssuerWalletAssets({
         address: issuerWallet?.classic_address ?? "",
         obligations: issuerObligations.data?.obligations,
+        prices: livePrices.prices,
       }),
-    [issuerWallet?.classic_address, issuerObligations.data?.obligations],
+    [issuerWallet?.classic_address, issuerObligations.data?.obligations, livePrices.prices],
   );
 
   const totalUsd = useMemo(() => totalUsdForAssets(issuerAssets), [issuerAssets]);
 
   const portfolioLoading =
-    aggregate.isLoading || (!!issuerWallet && issuerObligations.isLoading);
+    livePrices.isLoading ||
+    aggregate.isLoading ||
+    (!!issuerWallet && issuerObligations.isLoading);
 
   const treasuryWallet = useMemo(
     () => sortedWallets.find((w) => w.wallet_type === "treasury") ?? null,
@@ -100,7 +105,12 @@ export function AdminHome() {
   }, [portfolioWallets, issuerAssets, aggregate.assets]);
 
   const onRefresh = async () => {
-    await Promise.all([wallets.refetch(), aggregate.refetch(), issuerObligations.refetch()]);
+    await Promise.all([
+      wallets.refetch(),
+      livePrices.refetch(),
+      aggregate.refetch(),
+      issuerObligations.refetch(),
+    ]);
   };
 
   return (
@@ -109,7 +119,7 @@ export function AdminHome() {
         contentContainerClassName="px-6 pt-6 pb-32"
         refreshControl={
           <RefreshControl
-            refreshing={wallets.isFetching || portfolioLoading}
+            refreshing={wallets.isFetching || aggregate.isFetching || livePrices.isFetching}
             onRefresh={onRefresh}
             tintColor="#fff"
           />

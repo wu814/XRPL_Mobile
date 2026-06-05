@@ -2,18 +2,16 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { HttpError } from "../plugins/auth.js";
 import { loadWalletByAddress } from "../services/xrpl/wallet/loadWallet.js";
-import { deleteOracle, setOracle } from "../services/xrpl/oracle/manageOracle.js";
+import { deleteOracle } from "../services/xrpl/oracle/deleteOracle.js";
+import { createLiveCryptoOracle } from "../services/xrpl/oracle/createLiveCryptoOracle.js";
+import { getLivePrices } from "../services/xrpl/oracle/getLivePrices.js";
+import { DEFAULT_COIN_GECKO_IDS, DEFAULT_VS_CURRENCY } from "../services/xrpl/oracle/coinGecko.js";
 
 const setBody = z.object({
   walletAddress: z.string().min(25),
   oracleDocumentId: z.number().int().nonnegative(),
-  provider: z.string().min(1).max(256),
-  assetClass: z.string().min(1).max(16),
-  baseAsset: z.string().min(3).max(40),
-  quoteAsset: z.string().min(3).max(40),
-  price: z.number().positive(),
-  scale: z.number().int().min(0).max(10),
-  uri: z.string().max(256).optional(),
+  coinGeckoIds: z.array(z.string().min(1)).optional(),
+  vsCurrency: z.string().min(3).max(10).optional(),
 });
 
 const deleteBody = z.object({
@@ -22,6 +20,12 @@ const deleteBody = z.object({
 });
 
 export async function oracleRoutes(app: FastifyInstance) {
+  app.get("/prices", async (req) => {
+    await app.requireAuth(req);
+    const client = await app.ensureXrplConnected();
+    return getLivePrices(client, app.supabase);
+  });
+
   app.post("/", async (req) => {
     await app.requireAdmin(req);
     const parse = setBody.safeParse(req.body ?? {});
@@ -29,16 +33,13 @@ export async function oracleRoutes(app: FastifyInstance) {
 
     const client = await app.ensureXrplConnected();
     const { wallet } = await loadWalletByAddress(app.supabase, parse.data.walletAddress);
-    return setOracle(client, wallet, {
-      oracleDocumentId: parse.data.oracleDocumentId,
-      provider: parse.data.provider,
-      assetClass: parse.data.assetClass,
-      baseAsset: parse.data.baseAsset,
-      quoteAsset: parse.data.quoteAsset,
-      price: parse.data.price,
-      scale: parse.data.scale,
-      uri: parse.data.uri,
-    });
+    return createLiveCryptoOracle(
+      client,
+      wallet,
+      parse.data.oracleDocumentId,
+      parse.data.coinGeckoIds ?? [...DEFAULT_COIN_GECKO_IDS],
+      parse.data.vsCurrency ?? DEFAULT_VS_CURRENCY,
+    );
   });
 
   app.delete("/", async (req) => {

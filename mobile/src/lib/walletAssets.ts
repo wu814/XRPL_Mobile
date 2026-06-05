@@ -1,8 +1,4 @@
-import {
-  STATIC_CHANGE_24H,
-  STATIC_PRICES,
-  getUsdValue,
-} from "@/src/lib/prices";
+import { getUsdValue, type PriceInfo } from "@/src/lib/prices";
 import { decodeCurrency } from "@/src/lib/formatters";
 
 export interface WalletAsset {
@@ -10,7 +6,6 @@ export interface WalletAsset {
   currency: string;
   balance: number;
   value: number;
-  change24h: string;
   issuer: string | null;
   walletAddress: string;
 }
@@ -55,8 +50,9 @@ export function buildWalletAssets(input: {
   infoData: unknown | undefined;
   lines: TrustlineRow[] | undefined;
   includeZeroXrp?: boolean;
+  prices?: PriceInfo[];
 }): WalletAsset[] {
-  const { address, infoData, lines, includeZeroXrp = true } = input;
+  const { address, infoData, lines, includeZeroXrp = true, prices = [] } = input;
   const out: WalletAsset[] = [];
 
   if (infoData) {
@@ -66,8 +62,7 @@ export function buildWalletAssets(input: {
         id: `xrp-${address}`,
         currency: "XRP",
         balance: xrpBalance,
-        value: getUsdValue("XRP", xrpBalance, STATIC_PRICES),
-        change24h: STATIC_CHANGE_24H.XRP ?? "0",
+        value: getUsdValue("XRP", xrpBalance, prices),
         issuer: null,
         walletAddress: address,
       });
@@ -82,8 +77,7 @@ export function buildWalletAssets(input: {
         id: `${line.currency}-${line.account}-${address}`,
         currency: line.currency,
         balance,
-        value: getUsdValue(line.currency, balance, STATIC_PRICES),
-        change24h: STATIC_CHANGE_24H[line.currency] ?? "0",
+        value: getUsdValue(line.currency, balance, prices),
         issuer: line.account,
         walletAddress: address,
       });
@@ -97,8 +91,9 @@ export function buildWalletAssets(input: {
 export function buildIssuerWalletAssets(input: {
   address: string;
   obligations: Record<string, string> | undefined;
+  prices?: PriceInfo[];
 }): WalletAsset[] {
-  const { address, obligations } = input;
+  const { address, obligations, prices = [] } = input;
   if (!obligations) return [];
 
   const out: WalletAsset[] = [];
@@ -111,8 +106,7 @@ export function buildIssuerWalletAssets(input: {
       id: `issued-${currency}-${address}`,
       currency,
       balance,
-      value: getUsdValue(currency, balance, STATIC_PRICES),
-      change24h: STATIC_CHANGE_24H[currency] ?? "0",
+      value: getUsdValue(currency, balance, prices),
       issuer: address,
       walletAddress: address,
     });

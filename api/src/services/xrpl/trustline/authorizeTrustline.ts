@@ -1,4 +1,4 @@
-import type { Client, TrustSet, Wallet } from "xrpl";
+import type { AccountLinesResponse, Client, TrustSet, Wallet } from "xrpl";
 import { handleTransactionError, isTypedTransactionSuccessful } from "../../../lib/errorHandler.js";
 
 // tfSetfAuth — issuer authorizes a holder's trustline (required when the issuer
@@ -19,6 +19,18 @@ export async function authorizeTrustline(
   holderAddress: string,
 ): Promise<{ hash: string }> {
   if (!client.isConnected()) await client.connect();
+
+  const holderLines: AccountLinesResponse = await client.request({
+    command: "account_lines",
+    account: holderAddress,
+    peer: issuerWallet.classicAddress,
+    ledger_index: "validated",
+  });
+  if (!holderLines.result.lines.some((line) => line.currency === currency)) {
+    throw new Error(
+      `No trustline request found from ${holderAddress} for ${currency}. The holder must create a trustline first.`,
+    );
+  }
 
   const tx: TrustSet = {
     TransactionType: "TrustSet",

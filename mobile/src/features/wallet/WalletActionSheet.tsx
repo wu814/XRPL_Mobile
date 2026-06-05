@@ -28,6 +28,10 @@ import { CurrencySelectorList } from "@/src/features/payments/CurrencySelectorSh
 import { CurrencyIconImage } from "@/src/features/shared/CurrencyIconImage";
 import type { FreezeMode, SetTrustlineResult } from "@/src/api/trustlines";
 
+// Mirrors server default in api/src/services/xrpl/oracle/coinGecko.ts (read-only UI).
+const COIN_GECKO_IDS_DISPLAY = "ripple,bitcoin,ethereum,euro-coin,solana";
+const VS_CURRENCY_DISPLAY = "usd";
+
 export type WalletActionKey =
   | "set_trustline"
   | "authorize_deposit"
@@ -86,12 +90,6 @@ export function WalletActionSheet({
   // Oracle fields
   const [oracleMode, setOracleMode] = useState<OracleMode>("set");
   const [oracleDocId, setOracleDocId] = useState("1");
-  const [provider, setProvider] = useState("yona");
-  const [assetClass, setAssetClass] = useState("currency");
-  const [baseAsset, setBaseAsset] = useState("XRP");
-  const [quoteAsset, setQuoteAsset] = useState("USD");
-  const [price, setPrice] = useState("");
-  const [scale, setScale] = useState("4");
 
   const setTrustlineMut = useSetTrustline();
   const authorizeDepositMut = useAuthorizeDeposit();
@@ -129,7 +127,6 @@ export function WalletActionSheet({
     setAmount("");
     setCounterpartyUsername("");
     setCounterpartyAddress("");
-    setPrice("");
     setFreezeMode("freeze");
     setOracleMode("set");
   };
@@ -143,7 +140,12 @@ export function WalletActionSheet({
   const dismissCurrencyPicker = () => setShowCurrencyPicker(false);
 
   const resolveCounterparty = async (): Promise<string> => {
-    if (action === "authorize_deposit" || action === "authorize_trustline") {
+    if (
+      action === "authorize_deposit" ||
+      action === "authorize_trustline" ||
+      action === "clawback" ||
+      action === "deep_freeze"
+    ) {
       const addr = counterpartyAddress.trim();
       if (!addr) throw new Error("Enter an address");
       return addr;
@@ -250,25 +252,11 @@ export function WalletActionSheet({
             });
             Alert.alert("Oracle deleted");
           } else {
-            const p = Number(price);
-            const s = Number(scale);
-            if (!Number.isFinite(p) || p <= 0) {
-              return Alert.alert("Invalid price", "Enter a price greater than zero.");
-            }
-            if (!Number.isInteger(s) || s < 0 || s > 10) {
-              return Alert.alert("Invalid scale", "Scale must be an integer between 0 and 10.");
-            }
             await setOracleMut.mutateAsync({
               walletAddress: wallet.classic_address,
               oracleDocumentId: docId,
-              provider: provider.trim(),
-              assetClass: assetClass.trim(),
-              baseAsset: baseAsset.trim(),
-              quoteAsset: quoteAsset.trim(),
-              price: p,
-              scale: s,
             });
-            Alert.alert("Oracle updated");
+            Alert.alert("Oracle set successfully");
           }
           break;
         }
@@ -288,7 +276,10 @@ export function WalletActionSheet({
     action === "clawback" ||
     action === "deep_freeze";
   const useAddressOnlyCounterparty =
-    action === "authorize_deposit" || action === "authorize_trustline";
+    action === "authorize_deposit" ||
+    action === "authorize_trustline" ||
+    action === "clawback" ||
+    action === "deep_freeze";
   const needsCurrency =
     action === "set_trustline" ||
     action === "authorize_trustline" ||
@@ -329,7 +320,7 @@ export function WalletActionSheet({
                 value={oracleMode}
                 onChange={(v) => setOracleMode(v as OracleMode)}
                 options={[
-                  { id: "set", label: "Set / Update" },
+                  { id: "set", label: "Set" },
                   { id: "delete", label: "Delete" },
                 ]}
               />
@@ -407,6 +398,18 @@ export function WalletActionSheet({
             ) : null}
 
             {action === "clawback" ? (
+              <Text className="mb-4 text-xs text-white/50">
+                Enter the holder&apos;s XRPL address to claw back tokens.
+              </Text>
+            ) : null}
+
+            {action === "deep_freeze" ? (
+              <Text className="mb-4 text-xs text-white/50">
+                Enter the holder&apos;s XRPL address to freeze or unfreeze their trustline.
+              </Text>
+            ) : null}
+
+            {action === "clawback" ? (
               <>
                 <Label>Amount to claw back</Label>
                 <Field
@@ -439,51 +442,60 @@ export function WalletActionSheet({
                 <Field
                   value={oracleDocId}
                   onChangeText={setOracleDocId}
-                  placeholder="1"
+                  placeholder="Enter Oracle Document ID"
                   keyboardType="number-pad"
                 />
                 {oracleMode === "set" ? (
                   <>
-                    <Label>Provider</Label>
-                    <Field value={provider} onChangeText={setProvider} placeholder="yona" autoCapitalize="none" />
-                    <Label>Asset Class</Label>
-                    <Field value={assetClass} onChangeText={setAssetClass} placeholder="currency" autoCapitalize="none" />
-                    <View className="flex-row">
-                      <View className="mr-2 flex-1">
-                        <Label>Base Asset</Label>
-                        <Field value={baseAsset} onChangeText={setBaseAsset} placeholder="XRP" autoCapitalize="characters" />
-                      </View>
-                      <View className="ml-2 flex-1">
-                        <Label>Quote Asset</Label>
-                        <Field value={quoteAsset} onChangeText={setQuoteAsset} placeholder="USD" autoCapitalize="characters" />
-                      </View>
-                    </View>
-                    <View className="flex-row">
-                      <View className="mr-2 flex-1">
-                        <Label>Price</Label>
-                        <Field value={price} onChangeText={setPrice} placeholder="0.00" keyboardType="decimal-pad" />
-                      </View>
-                      <View className="ml-2 flex-1">
-                        <Label>Scale</Label>
-                        <Field value={scale} onChangeText={setScale} placeholder="4" keyboardType="number-pad" />
-                      </View>
-                    </View>
+                    <Label>CoinGecko IDs (Read-only)</Label>
+                    <ReadOnlyField value={COIN_GECKO_IDS_DISPLAY} />
+                    <Label>VS Currency (Read-only)</Label>
+                    <ReadOnlyField value={VS_CURRENCY_DISPLAY} />
                   </>
                 ) : null}
               </>
             ) : null}
 
-            <TouchableOpacity
-              onPress={onSubmit}
-              disabled={isPending}
-              className={`mt-6 items-center rounded-2xl py-4 ${isPending ? "bg-white/15" : "bg-primary"}`}
-            >
-              {isPending ? (
-                <ActivityIndicator />
-              ) : (
-                <Text className="text-base font-semibold text-black">{submitLabel(action, oracleMode)}</Text>
-              )}
-            </TouchableOpacity>
+            {action === "manage_oracle" ? (
+              <View className="mt-6 flex-row gap-2">
+                <TouchableOpacity
+                  onPress={close}
+                  disabled={isPending}
+                  className="flex-1 items-center rounded-2xl border border-white/15 py-4"
+                >
+                  <Text className="text-base font-semibold text-white">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={onSubmit}
+                  disabled={isPending || !oracleDocId.trim()}
+                  className={`flex-1 items-center rounded-2xl py-4 ${
+                    isPending || !oracleDocId.trim() ? "bg-white/15" : "bg-primary"
+                  }`}
+                >
+                  {isPending ? (
+                    <ActivityIndicator />
+                  ) : (
+                    <Text className="text-base font-semibold text-black">
+                      {submitLabel(action, oracleMode)}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={onSubmit}
+                disabled={isPending}
+                className={`mt-6 items-center rounded-2xl py-4 ${isPending ? "bg-white/15" : "bg-primary"}`}
+              >
+                {isPending ? (
+                  <ActivityIndicator />
+                ) : (
+                  <Text className="text-base font-semibold text-black">
+                    {submitLabel(action, oracleMode)}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
         </>
       )}
     </AppSheet>
@@ -492,7 +504,7 @@ export function WalletActionSheet({
 
 function trustlineSuccessMessage(currency: string, result: SetTrustlineResult): string {
   if (result.trustlineAlreadyExisted) {
-    return `Trustline for ${currency} already exists. No welcome gift issued.`;
+    return `Trustline for ${currency} already exists. No sign-in bonus issued.`;
   }
 
   const bonus = result.welcomeBonus;
@@ -503,7 +515,7 @@ function trustlineSuccessMessage(currency: string, result: SetTrustlineResult): 
   if (bonus.skipped) {
     return (
       `Trustline for ${currency} set successfully.\n\n` +
-      `Welcome gift could not be issued: ${bonus.skipReason || "unknown reason"}`
+      `Sign-in bonus could not be issued: ${bonus.skipReason || "unknown reason"}`
     );
   }
 
@@ -522,7 +534,7 @@ function trustlineSuccessMessage(currency: string, result: SetTrustlineResult): 
 
   return (
     `Trustline for ${currency} set successfully!\n\n` +
-    `Welcome gift: you received ${amount} ${bonus.currency} ` +
+    `Sign-in bonus: you received ${amount} ${bonus.currency} ` +
     `(≈ $${usd} USD) at $${price}/${bonus.currency}.`
   );
 }
@@ -540,7 +552,7 @@ function descriptionFor(action: WalletActionKey | null): string {
     case "deep_freeze":
       return "Freeze, deep-freeze, or unfreeze a holder's trustline.";
     case "manage_oracle":
-      return "Create, update, or delete an XRPL price oracle owned by this wallet.";
+      return "Set live crypto prices on-chain from CoinGecko, or delete an existing oracle.";
     default:
       return "";
   }
@@ -552,7 +564,7 @@ function counterpartyLabel(action: WalletActionKey | null): string {
 }
 
 function submitLabel(action: WalletActionKey | null, oracleMode: OracleMode): string {
-  if (action === "manage_oracle") return oracleMode === "delete" ? "Delete Oracle" : "Submit Oracle";
+  if (action === "manage_oracle") return oracleMode === "delete" ? "Delete Oracle" : "Set Oracle";
   if (action) return WALLET_ACTION_TITLES[action];
   return "Submit";
 }
@@ -569,6 +581,14 @@ function Field(props: React.ComponentProps<typeof TextInput>) {
       {...props}
       className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white"
     />
+  );
+}
+
+function ReadOnlyField({ value }: { value: string }) {
+  return (
+    <View className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 opacity-60">
+      <Text className="text-base text-white">{value}</Text>
+    </View>
   );
 }
 

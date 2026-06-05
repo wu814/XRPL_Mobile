@@ -63,7 +63,7 @@ export default function AmmListScreen() {
               onPress={() => router.push(`/amm/${a.account}` as any)}
               className="mb-3 rounded-2xl border border-white/10 p-4"
             >
-              <View className="mb-1 flex-row items-center">
+              <View className="flex-row items-center">
                 <View className="mr-2 flex-row">
                   <CurrencyIconImage currency={decodeCurrency(a.currency1)} size={28} />
                   <View className="-ml-3">
@@ -74,7 +74,6 @@ export default function AmmListScreen() {
                   {decodeCurrency(a.currency1)} / {decodeCurrency(a.currency2)}
                 </Text>
               </View>
-              <Text className="font-mono text-xs text-white/60">{a.account}</Text>
             </TouchableOpacity>
           ))
         ) : (

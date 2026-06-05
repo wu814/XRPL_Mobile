@@ -1,34 +1,18 @@
 /**
- * Static USD prices for testnet demo. The xrpl_mvp web app fetches these from
- * an XRPL Price Oracle; for the mobile demo we use the same hardcoded values
- * shown in the web app's screenshots so totals match.
+ * USD price helpers. Live prices come from GET /oracle/prices (on-chain oracle
+ * with server-side static fallback).
  */
+
+export type PriceSource = "coingecko" | "oracle" | "static";
 
 export interface PriceInfo {
   baseAsset: string;
   price: number;
   available: boolean;
+  source?: PriceSource;
 }
 
-export const STATIC_PRICES: PriceInfo[] = [
-  { baseAsset: "USD", price: 1, available: true },
-  { baseAsset: "XRP", price: 1.34, available: true },
-  { baseAsset: "EUR", price: 1.16, available: true },
-  { baseAsset: "BTC", price: 97969, available: true },
-  { baseAsset: "ETH", price: 2072.65, available: true },
-  { baseAsset: "SOL", price: 84.12, available: true },
-];
-
-export const STATIC_CHANGE_24H: Record<string, string> = {
-  XRP: "2.3",
-  USD: "1.5",
-  EUR: "1.5",
-  BTC: "1.5",
-  ETH: "1.5",
-  SOL: "1.5",
-};
-
-export function getUsdValue(currency: string, amount: number, prices: PriceInfo[] = STATIC_PRICES): number {
+export function getUsdValue(currency: string, amount: number, prices: PriceInfo[] = []): number {
   if (!currency || !amount) return 0;
   if (currency === "USD") return amount;
   const info = prices.find((p) => p.baseAsset === currency && p.available);

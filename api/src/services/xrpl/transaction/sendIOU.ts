@@ -1,6 +1,6 @@
 import type { AccountLinesResponse, Client, IssuedCurrencyAmount, Payment, Wallet } from "xrpl";
 import { handleTransactionError, isTypedTransactionSuccessful } from "../../../lib/errorHandler.js";
-import { checkTrustline, trustlineExists } from "../trustline/setTrustline.js";
+import { checkTrustline } from "../trustline/setTrustline.js";
 
 async function senderBalance(
   client: Client,
@@ -43,9 +43,9 @@ export async function sendIOU(
   const senderIsIssuer = fromWallet.classicAddress === issuerAddress;
 
   if (senderIsIssuer) {
-    if (!(await trustlineExists(client, destination, issuerAddress, currency))) {
+    if (!(await checkTrustline(client, destination, issuerAddress, currency))) {
       throw new Error(
-        `Destination ${destination} has no trustline to issuer ${issuerAddress} for ${currency}`,
+        `Destination ${destination} lacks an authorized trustline to issuer ${issuerAddress} for ${currency}`,
       );
     }
   } else {

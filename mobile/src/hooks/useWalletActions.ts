@@ -7,6 +7,7 @@ import {
 import { authorizeDeposit } from "@/src/api/wallets";
 import { clawback } from "@/src/api/transactions";
 import { deleteOracle, setOracle } from "@/src/api/oracle";
+import { livePriceKeys } from "./useLivePrices";
 
 function useLedgerInvalidation() {
   const qc = useQueryClient();
@@ -43,11 +44,25 @@ export function useClawback() {
 }
 
 export function useSetOracle() {
+  const qc = useQueryClient();
   const invalidate = useLedgerInvalidation();
-  return useMutation({ mutationFn: setOracle, onSuccess: invalidate });
+  return useMutation({
+    mutationFn: setOracle,
+    onSuccess: async () => {
+      invalidate();
+      await qc.invalidateQueries({ queryKey: livePriceKeys.all });
+    },
+  });
 }
 
 export function useDeleteOracle() {
+  const qc = useQueryClient();
   const invalidate = useLedgerInvalidation();
-  return useMutation({ mutationFn: deleteOracle, onSuccess: invalidate });
+  return useMutation({
+    mutationFn: deleteOracle,
+    onSuccess: async () => {
+      invalidate();
+      await qc.invalidateQueries({ queryKey: livePriceKeys.all });
+    },
+  });
 }

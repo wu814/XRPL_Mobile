@@ -1,11 +1,11 @@
 import type { AccountInfoResponse, Client } from "xrpl";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadWalletByAddress } from "./loadWallet.js";
-import { getLivePriceUSD } from "../oracle/getLivePriceUSD.js";
+import { getLivePrices } from "../oracle/getLivePrices.js";
 import { authorizeTrustline } from "../trustline/authorizeTrustline.js";
 import { sendIOU } from "../transaction/sendIOU.js";
 
-const WELCOME_BONUS_USD = 1000;
+const WELCOME_BONUS_USD = 10000;
 // lsfRequireAuth on the AccountRoot Flags bitfield.
 const LSF_REQUIRE_AUTH = 0x00040000;
 
@@ -19,7 +19,7 @@ export interface WelcomeBonusInfo {
   transactionHash?: string;
 }
 
-async function issuerRequiresAuth(client: Client, issuerAddress: string): Promise<boolean> {
+export async function issuerRequiresAuth(client: Client, issuerAddress: string): Promise<boolean> {
   const info: AccountInfoResponse = await client.request({
     command: "account_info",
     account: issuerAddress,
@@ -56,12 +56,17 @@ export async function awardWelcomeBonus(params: {
   });
 
   try {
-    const priceResult = await getLivePriceUSD(client, supabase, currency);
-    if (!priceResult.available || priceResult.price <= 0) {
-      return skipped(priceResult.reason || `USD price for ${currency} is unavailable`);
+    if (currency.length >= 10) {
+      return skipped("LP tokens are not eligible for the sign-in bonus");
     }
 
-    const rawAmount = WELCOME_BONUS_USD / priceResult.price;
+    const { prices } = await getLivePrices(client, supabase);
+    const priceInfo = prices.find((p) => p.baseAsset === currency && p.available);
+    if (!priceInfo || priceInfo.price <= 0) {
+      return skipped(`USD price for ${currency} is unavailable`);
+    }
+
+    const rawAmount = WELCOME_BONUS_USD / priceInfo.price;
     if (!Number.isFinite(rawAmount) || rawAmount <= 0) {
       return skipped(`Computed bonus amount is invalid for ${currency}`);
     }
@@ -89,7 +94,7 @@ export async function awardWelcomeBonus(params: {
       currency,
       amount: amountString,
       usdValue: WELCOME_BONUS_USD,
-      pricePerUnitUSD: priceResult.price,
+      pricePerUnitUSD: priceInfo.price,
       skipped: false,
       transactionHash: hash,
     };

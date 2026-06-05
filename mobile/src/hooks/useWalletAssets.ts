@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useLivePrices } from "./useLivePrices";
 import { useWalletInfo, useWalletLines } from "./useWallets";
 import {
   balanceByCurrencyFromWallet,
@@ -13,6 +14,7 @@ import {
 export type { WalletAsset, WalletBalanceSummary } from "@/src/lib/walletAssets";
 
 export function useWalletAssets(address: string | undefined) {
+  const livePrices = useLivePrices();
   const info = useWalletInfo(address);
   const lines = useWalletLines(address);
 
@@ -28,8 +30,9 @@ export function useWalletAssets(address: string | undefined) {
       infoData: info.data,
       lines: lines.data as TrustlineRow[] | undefined,
       includeZeroXrp: true,
+      prices: livePrices.prices,
     });
-  }, [address, info.data, lines.data]);
+  }, [address, info.data, lines.data, livePrices.prices]);
 
   const totalUsd = useMemo(() => totalUsdForAssets(assets), [assets]);
 
@@ -43,14 +46,18 @@ export function useWalletAssets(address: string | undefined) {
   );
 
   return {
-    isLoading: info.isLoading || lines.isLoading,
-    error: info.error || lines.error,
+    isLoading:
+      info.isLoading ||
+      lines.isLoading ||
+      (livePrices.isLoading && livePrices.prices.length === 0),
+    isFetching: info.isFetching || lines.isFetching || livePrices.isFetching,
+    error: info.error || lines.error || livePrices.error,
     summary,
     assets,
     totalUsd,
     balanceByCurrency,
     refetch: async () => {
-      await Promise.all([info.refetch(), lines.refetch()]);
+      await Promise.all([info.refetch(), lines.refetch(), livePrices.refetch()]);
     },
   };
 }

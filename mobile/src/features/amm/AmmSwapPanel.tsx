@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import type { AmmInfo } from "@/src/api/amm";
+import { IconSymbol } from "@/src/components/ui/icon-symbol";
 import { useAmmSwap } from "@/src/hooks/useAmm";
 import { calculateEstimateOutput, calculateExactAMMInput } from "@/src/lib/ammCalculations";
 import { decodeCurrency } from "@/src/lib/formatters";
@@ -157,8 +158,11 @@ export function AmmSwapPanel({ ammInfo, walletAddress, disabled }: Props) {
         className="mb-3 rounded-xl border border-white/15 px-3 py-2 text-white"
       />
 
-      <TouchableOpacity onPress={flipCurrencies} className="mb-3 self-center rounded-full bg-white/10 px-4 py-2">
-        <Text className="text-xs text-white/80">Swap direction</Text>
+      <TouchableOpacity
+        onPress={flipCurrencies}
+        className="mb-3 self-center rounded-full bg-white/10 p-2"
+      >
+        <IconSymbol name="arrow.up.arrow.down" size={20} color="#fff" />
       </TouchableOpacity>
 
       <Text className="mb-1 text-xs text-white/50">Buy ({decodeCurrency(buyCurrency)})</Text>

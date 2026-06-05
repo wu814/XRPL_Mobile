@@ -42,7 +42,7 @@ export function UserHome() {
     await Promise.all([wallets.refetch(), assetsState.refetch()]);
   };
 
-  const refreshing = wallets.isFetching || assetsState.isLoading;
+  const refreshing = wallets.isFetching || assetsState.isFetching;
 
   return (
     <Screen>
