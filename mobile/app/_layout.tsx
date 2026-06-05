@@ -77,6 +77,7 @@ function AuthBootstrapper() {
 
 function AuthGate() {
   const session = useAuthStore((s) => s.session);
+  const profile = useAuthStore((s) => s.profile);
   const isLoading = useAuthStore((s) => s.isLoading);
   const segments = useSegments();
   const router = useRouter();
@@ -84,12 +85,22 @@ function AuthGate() {
   useEffect(() => {
     if (isLoading) return;
     const inAuthGroup = segments[0] === "sign-in" || segments[0] === "auth-callback";
+    const onSetUsername = segments[0] === "set-username";
+
     if (!session && !inAuthGroup) {
       router.replace("/sign-in");
-    } else if (session && inAuthGroup) {
-      router.replace("/");
+      return;
     }
-  }, [session, isLoading, segments, router]);
+
+    if (session && inAuthGroup) {
+      router.replace("/");
+      return;
+    }
+
+    if (session && profile && !profile.username && !onSetUsername) {
+      router.replace("/set-username");
+    }
+  }, [session, profile, isLoading, segments, router]);
 
   return null;
 }
@@ -109,6 +120,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="sign-in" options={{ headerShown: false }} />
           <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+          <Stack.Screen name="set-username" options={{ headerShown: false }} />
           <Stack.Screen name="advanced/amm" options={{ headerShown: true }} />
           <Stack.Screen name="advanced/dex" options={{ headerShown: true }} />
           <Stack.Screen name="advanced/nft" options={{ headerShown: true }} />

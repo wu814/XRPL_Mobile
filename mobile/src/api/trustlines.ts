@@ -16,6 +16,8 @@ export interface SetTrustlineResult {
   hash: string;
   trustlineAlreadyExisted?: boolean;
   message?: string;
+  /** Bonus is being issued asynchronously after trustline + authorize complete. */
+  welcomeBonusPending?: boolean;
   welcomeBonus?: WelcomeBonusInfo;
 }
 

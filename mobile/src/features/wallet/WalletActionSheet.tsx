@@ -484,6 +484,13 @@ function trustlineSuccessMessage(currency: string, result: SetTrustlineResult): 
     return `Trustline for ${currency} already exists. No sign-in bonus issued.`;
   }
 
+  if (result.welcomeBonusPending) {
+    return (
+      `Trustline for ${currency} set successfully!\n\n` +
+      `Your sign-in bonus is being sent and should appear in your balance shortly.`
+    );
+  }
+
   const bonus = result.welcomeBonus;
   if (!bonus) {
     return result.message || `Trustline for ${currency} set successfully.`;

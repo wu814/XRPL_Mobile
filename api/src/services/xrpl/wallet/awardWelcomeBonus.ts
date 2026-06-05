@@ -1,4 +1,4 @@
-import type { AccountInfoResponse, Client } from "xrpl";
+import type { AccountInfoResponse, Client, Wallet } from "xrpl";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadWalletByAddress } from "./loadWallet.js";
 import { getLivePrices } from "../oracle/getLivePrices.js";
@@ -43,8 +43,19 @@ export async function awardWelcomeBonus(params: {
   recipientAddress: string;
   issuerAddress: string;
   currency: string;
+  /** Pre-loaded issuer wallet — avoids a duplicate DB decrypt when the caller already has it. */
+  issuerWallet?: Wallet;
+  /** When true, skip the authorize step (caller already authorized or auth is not required). */
+  skipAuthorize?: boolean;
 }): Promise<WelcomeBonusInfo> {
-  const { client, supabase, recipientAddress, issuerAddress, currency } = params;
+  const {
+    client,
+    supabase,
+    recipientAddress,
+    issuerAddress,
+    currency,
+    skipAuthorize = false,
+  } = params;
 
   const skipped = (reason: string): WelcomeBonusInfo => ({
     currency,
@@ -73,14 +84,16 @@ export async function awardWelcomeBonus(params: {
     // Round down to 6 decimals (well within XRPL IOU precision).
     const amountString = (Math.floor(rawAmount * 1e6) / 1e6).toString();
 
-    let issuerWallet;
-    try {
-      ({ wallet: issuerWallet } = await loadWalletByAddress(supabase, issuerAddress));
-    } catch {
-      return skipped("Issuer wallet is not managed by this server");
+    let issuerWallet = params.issuerWallet;
+    if (!issuerWallet) {
+      try {
+        ({ wallet: issuerWallet } = await loadWalletByAddress(supabase, issuerAddress));
+      } catch {
+        return skipped("Issuer wallet is not managed by this server");
+      }
     }
 
-    if (await issuerRequiresAuth(client, issuerAddress)) {
+    if (!skipAuthorize && (await issuerRequiresAuth(client, issuerAddress))) {
       await authorizeTrustline(client, issuerWallet, currency, recipientAddress);
     }
 

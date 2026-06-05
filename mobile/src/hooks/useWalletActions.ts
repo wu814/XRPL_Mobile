@@ -19,8 +19,24 @@ function useLedgerInvalidation() {
 }
 
 export function useSetTrustline() {
+  const qc = useQueryClient();
   const invalidate = useLedgerInvalidation();
-  return useMutation({ mutationFn: setTrustline, onSuccess: invalidate });
+  return useMutation({
+    mutationFn: setTrustline,
+    onSuccess: (result) => {
+      invalidate();
+      if (result.welcomeBonusPending) {
+        // Bonus payment validates ~1 ledger after the HTTP response (~4s).
+        for (const delayMs of [5000, 10000]) {
+          setTimeout(() => {
+            qc.invalidateQueries({ queryKey: ["wallets", "lines"] });
+            qc.invalidateQueries({ queryKey: ["wallets", "info"] });
+            qc.invalidateQueries({ queryKey: ["transactions"] });
+          }, delayMs);
+        }
+      }
+    },
+  });
 }
 
 export function useAuthorizeTrustline() {

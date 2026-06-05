@@ -54,7 +54,7 @@ mobile/
 
 ## Auth flow
 
-1. User signs in with Google OAuth or Magic Link via Supabase Auth.
+1. User signs in with Google OAuth via Supabase Auth.
 2. Supabase issues a JWT, stored in **Expo SecureStore**.
 3. Every request to `api/` carries `Authorization: Bearer <jwt>`.
 4. On first sign-in, the app calls `POST /auth/profile` to create the `profiles` row.

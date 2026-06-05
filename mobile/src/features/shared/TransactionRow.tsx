@@ -247,7 +247,7 @@ export function TransactionRow({ tx }: { tx: ProcessedTransaction }) {
           </View>
         </View>
         <View className="ml-3 items-end">
-          <Text className={`font-medium ${color}`}>{formatAmount(tx.amount, tx.currency)}</Text>
+          <Text className="font-medium text-white/85">{formatAmount(tx.amount, tx.currency)}</Text>
           {tx.fee ? (
             <Text className="text-[10px] text-white/40">Fee: {tx.fee} XRP</Text>
           ) : null}

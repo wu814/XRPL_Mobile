@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Alert, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { AppScrollView } from "@/src/components/ui/AppScrollView";
 import { Screen } from "@/src/components/ui/Screen";
 import * as WebBrowser from "expo-web-browser";
@@ -9,11 +9,10 @@ import { createSessionFromUrl, getOAuthRedirectUri } from "@/src/lib/authSession
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignIn() {
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState<"google" | "magic" | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const onGoogle = async () => {
-    setBusy("google");
+    setBusy(true);
     let redirectTo = "";
     try {
       redirectTo = getOAuthRedirectUri();
@@ -53,28 +52,7 @@ export default function SignIn() {
           : message,
       );
     } finally {
-      setBusy(null);
-    }
-  };
-
-  const onMagicLink = async () => {
-    if (!email) {
-      Alert.alert("Enter your email first");
-      return;
-    }
-    setBusy("magic");
-    try {
-      const redirectTo = getOAuthRedirectUri();
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: redirectTo },
-      });
-      if (error) throw error;
-      Alert.alert("Check your email", "We sent you a magic link to sign in.");
-    } catch (err) {
-      Alert.alert("Sign in failed", (err as Error).message);
-    } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
@@ -86,41 +64,13 @@ export default function SignIn() {
 
         <TouchableOpacity
           onPress={onGoogle}
-          disabled={busy !== null}
-          className="mb-6 w-full items-center rounded-2xl bg-primary px-6 py-4"
+          disabled={busy}
+          className="w-full items-center rounded-2xl bg-primary px-6 py-4"
         >
-          {busy === "google" ? (
+          {busy ? (
             <ActivityIndicator />
           ) : (
             <Text className="text-base font-semibold text-black">Continue with Google</Text>
-          )}
-        </TouchableOpacity>
-
-        <View className="mb-4 w-full flex-row items-center">
-          <View className="h-px flex-1 bg-white/20" />
-          <Text className="mx-3 text-xs text-white/50">or</Text>
-          <View className="h-px flex-1 bg-white/20" />
-        </View>
-
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder="you@example.com"
-          placeholderTextColor="#888"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          className="mb-3 w-full rounded-2xl border border-white/20 px-4 py-3 text-base text-white"
-        />
-
-        <TouchableOpacity
-          onPress={onMagicLink}
-          disabled={busy !== null}
-          className="w-full items-center rounded-2xl border border-white/30 px-6 py-4"
-        >
-          {busy === "magic" ? (
-            <ActivityIndicator />
-          ) : (
-            <Text className="text-base font-semibold text-white">Email me a magic link</Text>
           )}
         </TouchableOpacity>
       </AppScrollView>

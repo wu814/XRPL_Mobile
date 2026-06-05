@@ -39,10 +39,16 @@ export default function SettingsScreen() {
           <Text className="text-base text-white">{profile?.email ?? "-"}</Text>
         </View>
 
-        <View className="mb-4 rounded-2xl border border-white/10 p-5">
-          <Text className="mb-1 text-sm uppercase tracking-wider text-white/50">Username</Text>
+        <TouchableOpacity
+          onPress={() => router.push("/set-username?mode=edit")}
+          className="mb-4 rounded-2xl border border-white/10 p-5"
+        >
+          <View className="mb-1 flex-row items-center justify-between">
+            <Text className="text-sm uppercase tracking-wider text-white/50">Username</Text>
+            <Text className="text-sm text-primary">{profile?.username ? "Edit" : "Set"}</Text>
+          </View>
           <Text className="text-base text-white">{profile?.username ?? "(not set)"}</Text>
-        </View>
+        </TouchableOpacity>
 
         <View className="mb-8 rounded-2xl border border-white/10 p-5">
           <Text className="mb-1 text-sm uppercase tracking-wider text-white/50">Role</Text>

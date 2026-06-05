@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import type { Wallet } from "xrpl";
 import { z } from "zod";
 import { HttpError } from "../plugins/auth.js";
 import { loadWalletByAddress } from "../services/xrpl/wallet/loadWallet.js";
@@ -67,48 +68,101 @@ export async function trustlineRoutes(app: FastifyInstance) {
       parse.data.limit,
     );
 
-    // Auto-authorize the holder's trustline when the issuer requires auth.
-    // Never fails the trustline request — bonus/send flows retry if needed.
-    if (parse.data.currency.length < 10) {
-      try {
-        if (await issuerRequiresAuth(client, parse.data.issuer)) {
-          const { wallet: issuerWallet } = await loadWalletByAddress(
+    const isStandardToken =
+      parse.data.currency !== "XRP" && parse.data.currency.length < 10;
+    const eligibleForBonus = walletType === "user" && isStandardToken;
+
+    let issuerWallet: Wallet | undefined;
+    let skipAuthorizeForBonus = false;
+
+    if (isStandardToken) {
+      const requiresAuth = await issuerRequiresAuth(client, parse.data.issuer);
+
+      if (requiresAuth || eligibleForBonus) {
+        try {
+          ({ wallet: issuerWallet } = await loadWalletByAddress(
             app.supabase,
             parse.data.issuer,
+          ));
+        } catch (err) {
+          req.log.warn(
+            { err: (err as Error).message, issuer: parse.data.issuer },
+            "Failed to load issuer wallet after setTrustline",
           );
+        }
+      }
+
+      if (requiresAuth && issuerWallet) {
+        try {
           await authorizeTrustline(
             client,
             issuerWallet,
             parse.data.currency,
             wallet.classicAddress,
           );
+          skipAuthorizeForBonus = true;
+        } catch (err) {
+          req.log.warn(
+            { err: (err as Error).message, currency: parse.data.currency },
+            "Auto-authorize trustline failed after setTrustline",
+          );
         }
-      } catch (err) {
-        req.log.warn(
-          { err: (err as Error).message, currency: parse.data.currency },
-          "Auto-authorize trustline failed after setTrustline",
-        );
+      } else if (!requiresAuth) {
+        skipAuthorizeForBonus = true;
       }
     }
 
-    // Award a one-time sign-in bonus when a regular user first trusts a token
-    // (mirrors xrpl_mvp). Never fails the trustline request.
-    let welcomeBonus: WelcomeBonusInfo | undefined;
-    if (
-      walletType === "user" &&
-      parse.data.currency !== "XRP" &&
-      parse.data.currency.length < 10
-    ) {
-      welcomeBonus = await awardWelcomeBonus({
+    // Issue the sign-in bonus in the background so the client is not blocked on a
+    // third ledger validation (~4s). Never fails the trustline request.
+    if (eligibleForBonus) {
+      const bonusParams = {
         client,
         supabase: app.supabase,
         recipientAddress: wallet.classicAddress,
         issuerAddress: parse.data.issuer,
         currency: parse.data.currency,
-      });
+        issuerWallet,
+        skipAuthorize: skipAuthorizeForBonus,
+      };
+
+      void awardWelcomeBonus(bonusParams)
+        .then((welcomeBonus: WelcomeBonusInfo) => {
+          if (welcomeBonus.skipped) {
+            req.log.warn(
+              {
+                welcomeBonus,
+                recipient: wallet.classicAddress,
+                currency: parse.data.currency,
+              },
+              "Welcome bonus skipped (background)",
+            );
+          } else {
+            req.log.info(
+              {
+                transactionHash: welcomeBonus.transactionHash,
+                amount: welcomeBonus.amount,
+                currency: parse.data.currency,
+                recipient: wallet.classicAddress,
+              },
+              "Welcome bonus issued (background)",
+            );
+          }
+        })
+        .catch((err: unknown) => {
+          req.log.error(
+            {
+              err: err instanceof Error ? err.message : err,
+              recipient: wallet.classicAddress,
+              currency: parse.data.currency,
+            },
+            "Welcome bonus background task failed",
+          );
+        });
+
+      return { ...result, trustlineAlreadyExisted: false, welcomeBonusPending: true };
     }
 
-    return { ...result, trustlineAlreadyExisted: false, welcomeBonus };
+    return { ...result, trustlineAlreadyExisted: false };
   });
 
   app.post("/authorize", async (req) => {

@@ -22,7 +22,6 @@ Open Supabase dashboard -> SQL Editor -> New query. Paste the contents of [`sche
 Authentication -> Providers:
 
 - **Google**: enable, paste OAuth client ID + secret. Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`.
-- **Email**: enable Magic Link. Disable password sign-up if you want passwordless only.
 
 Authentication -> URL Configuration -> add the Expo redirect:
 
