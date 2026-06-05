@@ -140,16 +140,6 @@ export function WalletActionSheet({
   const dismissCurrencyPicker = () => setShowCurrencyPicker(false);
 
   const resolveCounterparty = async (): Promise<string> => {
-    if (
-      action === "authorize_deposit" ||
-      action === "authorize_trustline" ||
-      action === "clawback" ||
-      action === "deep_freeze"
-    ) {
-      const addr = counterpartyAddress.trim();
-      if (!addr) throw new Error("Enter an address");
-      return addr;
-    }
     if (recipientMode === "address") {
       const addr = counterpartyAddress.trim();
       if (!addr) throw new Error("Enter an address");
@@ -275,11 +265,6 @@ export function WalletActionSheet({
     action === "authorize_trustline" ||
     action === "clawback" ||
     action === "deep_freeze";
-  const useAddressOnlyCounterparty =
-    action === "authorize_deposit" ||
-    action === "authorize_trustline" ||
-    action === "clawback" ||
-    action === "deep_freeze";
   const needsCurrency =
     action === "set_trustline" ||
     action === "authorize_trustline" ||
@@ -350,36 +335,28 @@ export function WalletActionSheet({
 
             {needsCounterparty ? (
               <>
-                {!useAddressOnlyCounterparty ? (
-                  <View className="mb-2 self-end">
-                    <SegmentedControl
-                      small
-                      value={recipientMode}
-                      onChange={(v) => setRecipientMode(v as RecipientMode)}
-                      options={[
-                        { id: "username", label: "Username" },
-                        { id: "address", label: "Address" },
-                      ]}
-                    />
-                  </View>
-                ) : null}
+                <View className="mb-2 self-end">
+                  <SegmentedControl
+                    small
+                    value={recipientMode}
+                    onChange={(v) => setRecipientMode(v as RecipientMode)}
+                    options={[
+                      { id: "username", label: "Username" },
+                      { id: "address", label: "Address" },
+                    ]}
+                  />
+                </View>
                 <Label>{counterpartyLabel(action)}</Label>
                 <Field
                   value={
-                    useAddressOnlyCounterparty || recipientMode === "address"
-                      ? counterpartyAddress
-                      : counterpartyUsername
+                    recipientMode === "address" ? counterpartyAddress : counterpartyUsername
                   }
                   onChangeText={(t) =>
-                    useAddressOnlyCounterparty || recipientMode === "address"
+                    recipientMode === "address"
                       ? setCounterpartyAddress(t)
                       : setCounterpartyUsername(t)
                   }
-                  placeholder={
-                    useAddressOnlyCounterparty || recipientMode === "address"
-                      ? "Address (r...)"
-                      : "Username"
-                  }
+                  placeholder={recipientMode === "address" ? "Address (r...)" : "Username"}
                   autoCapitalize="none"
                 />
               </>
@@ -387,25 +364,25 @@ export function WalletActionSheet({
 
             {action === "authorize_deposit" ? (
               <Text className="mb-4 text-xs text-white/50">
-                Enter the XRPL address to authorize for deposits.
+                Enter the username or XRPL address to authorize for deposits.
               </Text>
             ) : null}
 
             {action === "authorize_trustline" ? (
               <Text className="mb-4 text-xs text-white/50">
-                Enter the holder&apos;s XRPL address to authorize their trustline.
+                Enter the holder&apos;s username or XRPL address to authorize their trustline.
               </Text>
             ) : null}
 
             {action === "clawback" ? (
               <Text className="mb-4 text-xs text-white/50">
-                Enter the holder&apos;s XRPL address to claw back tokens.
+                Enter the holder&apos;s username or XRPL address to claw back tokens.
               </Text>
             ) : null}
 
             {action === "deep_freeze" ? (
               <Text className="mb-4 text-xs text-white/50">
-                Enter the holder&apos;s XRPL address to freeze or unfreeze their trustline.
+                Enter the holder&apos;s username or XRPL address to freeze or unfreeze their trustline.
               </Text>
             ) : null}
 
@@ -611,7 +588,9 @@ function SegmentedControl({
           <TouchableOpacity
             key={o.id}
             onPress={() => onChange(o.id)}
-            className={`flex-1 items-center rounded-full ${small ? "py-1" : "py-2"} ${active ? "bg-primary/20" : ""}`}
+            className={`${
+              small ? "rounded-full px-3 py-1" : "flex-1 items-center rounded-full py-2"
+            } ${active ? "bg-primary/20" : ""}`}
           >
             <Text
               className={`${small ? "text-xs" : "text-sm"} ${active ? "font-semibold text-primary" : "text-white/60"}`}

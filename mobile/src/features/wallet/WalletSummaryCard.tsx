@@ -50,7 +50,7 @@ export function WalletSummaryCard({
   const isSystemWallet = wallet.wallet_type !== "user";
   const heading = isSystemWallet
     ? wallet.wallet_type.toUpperCase()
-    : (username ?? "User").toUpperCase();
+    : (username ?? "User");
 
   const typeActions = actionsForType(wallet.wallet_type);
 
