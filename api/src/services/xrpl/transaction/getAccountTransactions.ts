@@ -185,6 +185,11 @@ const TF_CLEAR_FREEZE = 0x00200000;
 const TF_SET_DEEP_FREEZE = 0x00400000;
 const TF_CLEAR_DEEP_FREEZE = 0x00800000;
 
+/** LP tokens use a 40-character currency field (AMM account id), not an ISO code. */
+function isLpTokenCurrency(currency: string): boolean {
+  return !!currency && currency.length === 40;
+}
+
 function processTrustSet(tx: TrustSet) {
   const flags = Number(tx.Flags ?? 0);
   const currency = tx.LimitAmount?.currency || "";
@@ -221,6 +226,14 @@ function processTrustSet(tx: TrustSet) {
       counterparty,
       amount: currency ? `Freeze ${currency}` : "Freeze trustline",
       currency,
+    };
+  }
+  if (isLpTokenCurrency(currency)) {
+    return {
+      direction: "amm_lp_trustline_set",
+      counterparty,
+      amount: tx.LimitAmount ? "LP trustline" : "Remove LP trustline",
+      currency: "",
     };
   }
   return {

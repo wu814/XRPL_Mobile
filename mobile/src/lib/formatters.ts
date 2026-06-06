@@ -21,6 +21,16 @@ export function formatXrp(xrp: number | string, decimals = 6): string {
   return n.toFixed(decimals).replace(/0+$/, "").replace(/\.$/, "");
 }
 
+export function getCurrencyDecimalPlaces(currency: string): number {
+  return currency === "BTC" ? 6 : 2;
+}
+
+export function formatCurrencyAmount(value: number | string, currency: string): string {
+  const n = typeof value === "string" ? parseFloat(value) : value;
+  if (Number.isNaN(n)) return `${value} ${currency}`.trim();
+  return `${n.toFixed(getCurrencyDecimalPlaces(currency))} ${currency}`;
+}
+
 /** LP tokens use a 40-character currency field (AMM account id), not an ISO code. */
 export function isLpTokenCurrency(code: string): boolean {
   return !!code && code.length === 40;

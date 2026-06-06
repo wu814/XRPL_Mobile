@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { decodeCurrency, isLpTokenCurrency } from "@/src/lib/formatters";
-import { formatBalance } from "@/src/lib/prices";
+import { formatBalanceForCurrency } from "@/src/lib/prices";
 import { useLpPairCurrencies } from "@/src/hooks/useLpPairCurrencies";
 import type { TrustlineRow } from "@/src/lib/walletAssets";
 
@@ -19,7 +19,9 @@ export function TrustlineRowCard({ line }: { line: TrustlineRow }) {
   const lp = isLpTokenCurrency(line.currency);
   const pair = useLpPairCurrencies(lp ? line.account : undefined);
   const balance = parseFloat(line.balance);
-  const balanceText = Number.isFinite(balance) ? formatBalance(balance, 6) : line.balance;
+  const balanceText = Number.isFinite(balance)
+    ? formatBalanceForCurrency(balance, line.currency)
+    : line.balance;
 
   return (
     <View className="mb-3 rounded-2xl border border-white/10 p-4">

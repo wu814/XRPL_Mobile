@@ -172,7 +172,7 @@ function ActiveOffersList({
             <View className="flex-1 pr-2">
               <Text className="text-xs text-white">Seq #{seq}</Text>
               <Text className="text-[10px] text-white/55">
-                Want {formatActiveOfferLeg(gets)} · Pay {formatActiveOfferLeg(pays)}
+                Want {formatActiveOfferLeg(pays)} · Pay {formatActiveOfferLeg(gets)}
               </Text>
             </View>
             <Pressable
@@ -180,7 +180,7 @@ function ActiveOffersList({
                 if (cancelPending) return;
                 Alert.alert(
                   "Cancel offer?",
-                  `Remove offer #${seq} from the order book?\n\nWant ${formatActiveOfferLeg(gets)} · Pay ${formatActiveOfferLeg(pays)}`,
+                  `Remove offer #${seq} from the order book?\n\nWant ${formatActiveOfferLeg(pays)} · Pay ${formatActiveOfferLeg(gets)}`,
                   [
                     { text: "Keep offer", style: "cancel" },
                     {

@@ -3,7 +3,8 @@ import { AppScrollView } from "@/src/components/ui/AppScrollView";
 import { Screen } from "@/src/components/ui/Screen";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useWalletInfo, useWalletLines } from "@/src/hooks/useWallets";
-import { dropsToXrp, formatXrp } from "@/src/lib/formatters";
+import { dropsToXrp } from "@/src/lib/formatters";
+import { formatBalanceForCurrency } from "@/src/lib/prices";
 import { TrustlineRowCard } from "@/src/features/wallet/TrustlineRowCard";
 import type { TrustlineRow } from "@/src/lib/walletAssets";
 
@@ -27,7 +28,9 @@ export default function WalletDetail() {
             <Text className="text-danger">{(info.error as Error).message}</Text>
           ) : (
             <Text className="text-2xl font-semibold text-white">
-              {info.data?.Balance ? `${formatXrp(dropsToXrp(info.data.Balance))} XRP` : "-"}
+              {info.data?.Balance
+                ? `${formatBalanceForCurrency(dropsToXrp(info.data.Balance), "XRP")} XRP`
+                : "-"}
             </Text>
           )}
         </View>

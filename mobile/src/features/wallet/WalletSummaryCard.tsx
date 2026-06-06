@@ -3,7 +3,7 @@ import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { AppSheet } from "@/src/components/ui/AppSheet";
 import { useAuthStore } from "@/src/stores/auth";
-import { formatBalance } from "@/src/lib/prices";
+import { formatBalanceForCurrency } from "@/src/lib/prices";
 import type { WalletSummary } from "@/src/api/wallets";
 import type { WalletBalanceSummary } from "@/src/lib/walletAssets";
 import {
@@ -64,21 +64,21 @@ export function WalletSummaryCard({
           <View className="flex-row items-center">
             <Text className="text-sm text-white/60">Balance: </Text>
             <Text className="text-sm text-white">
-              {isLoading ? "…" : formatBalance(balance.xrpBalance, 6)}
+              {isLoading ? "…" : formatBalanceForCurrency(balance.xrpBalance, "XRP")}
             </Text>
             <Text className="ml-1 text-xs text-white/40">XRP</Text>
           </View>
           <View className="mt-1 flex-row items-center">
             <Text className="text-sm text-white/60">Reserved: </Text>
             <Text className="text-sm text-white">
-              {isLoading ? "…" : formatBalance(balance.reservedXrp, 1)}
+              {isLoading ? "…" : formatBalanceForCurrency(balance.reservedXrp, "XRP")}
             </Text>
             <Text className="ml-1 text-xs text-white/40">XRP</Text>
           </View>
           <View className="mt-1 flex-row items-center">
             <Text className="text-sm text-white/60">Available: </Text>
             <Text className="text-sm font-semibold text-primary">
-              {isLoading ? "…" : formatBalance(balance.availableXrp, 6)}
+              {isLoading ? "…" : formatBalanceForCurrency(balance.availableXrp, "XRP")}
             </Text>
             <Text className="ml-1 text-xs text-primary/80">XRP</Text>
           </View>
@@ -149,15 +149,15 @@ export function WalletSummaryCard({
             <Text className="mb-4 text-base text-white">{wallet.wallet_type}</Text>
             <Text className="mb-1 text-xs uppercase tracking-wider text-white/50">Balance</Text>
             <Text className="mb-4 text-base text-white">
-              {formatBalance(balance.xrpBalance, 6)} XRP
+              {formatBalanceForCurrency(balance.xrpBalance, "XRP")} XRP
             </Text>
             <Text className="mb-1 text-xs uppercase tracking-wider text-white/50">Reserved</Text>
             <Text className="mb-4 text-base text-white">
-              {formatBalance(balance.reservedXrp, 1)} XRP ({balance.ownerCount} owner objects)
+              {formatBalanceForCurrency(balance.reservedXrp, "XRP")} XRP ({balance.ownerCount} owner objects)
             </Text>
             <Text className="mb-1 text-xs uppercase tracking-wider text-white/50">Available</Text>
             <Text className="mb-6 text-base text-primary">
-              {formatBalance(balance.availableXrp, 6)} XRP
+              {formatBalanceForCurrency(balance.availableXrp, "XRP")} XRP
             </Text>
 
             <TouchableOpacity

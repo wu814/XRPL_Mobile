@@ -3,6 +3,8 @@
  * with server-side static fallback).
  */
 
+import { getCurrencyDecimalPlaces } from "./formatters";
+
 export type PriceSource = "coingecko" | "oracle" | "static";
 
 export interface PriceInfo {
@@ -43,4 +45,8 @@ export function formatBalance(value: number, maxDecimals = 6): string {
     minimumFractionDigits: minFractionDigits,
     maximumFractionDigits: maxDecimals,
   });
+}
+
+export function formatBalanceForCurrency(value: number, currency: string): string {
+  return formatBalance(value, getCurrencyDecimalPlaces(currency));
 }

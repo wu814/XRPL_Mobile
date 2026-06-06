@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { CurrencyIconImage, LpTokenIcon } from "./CurrencyIconImage";
 import { isLpTokenCurrency } from "@/src/lib/formatters";
-import { formatBalance, formatUsdDisplay } from "@/src/lib/prices";
+import { formatBalanceForCurrency, formatUsdDisplay } from "@/src/lib/prices";
 import type { WalletAsset } from "@/src/lib/walletAssets";
 import { useLpPairCurrencies } from "@/src/hooks/useLpPairCurrencies";
 
@@ -98,7 +98,9 @@ export function AssetTable({ assets, loading, title = "Assets" }: AssetTableProp
                     ) : (
                       <Text className="text-base font-semibold text-white">{displayName(asset, null)}</Text>
                     )}
-                    <Text className="text-xs text-white/50">{formatBalance(asset.balance, 6)}</Text>
+                    <Text className="text-xs text-white/50">
+                      {formatBalanceForCurrency(asset.balance, asset.currency)}
+                    </Text>
                   </View>
                 </View>
                 <View className="items-end">

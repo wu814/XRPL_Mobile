@@ -17,14 +17,12 @@ This service is containerized via [`Dockerfile`](./Dockerfile). Railway auto-det
 
    | Variable | Where to find it |
    |----------|------------------|
-   | `PORT` | `3001` |
    | `NODE_ENV` | `production` |
    | `LOG_LEVEL` | `info` |
    | `SUPABASE_URL` | Supabase Project Settings -> API |
    | `SUPABASE_SECRET_KEY` | Supabase Project Settings -> API (secret key) |
    | `SEED_ENCRYPTION_KEY` | `openssl rand -base64 48` |
    | `XRPL_NETWORK` | `wss://s.altnet.rippletest.net:51233` |
-   | `XRPL_FAUCET_URL` | `https://faucet.altnet.rippletest.net/accounts` |
    | `CORS_ORIGINS` | Comma-separated list of allowed origins (Expo dev URL + production app URL) |
 
 7. Trigger a redeploy. Railway will run `docker build .` from `api/` then start the container with `node dist/server.js`.

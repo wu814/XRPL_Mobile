@@ -6,6 +6,8 @@ import { xrplPlugin } from "./plugins/xrpl.js";
 import { authPlugin } from "./plugins/auth.js";
 import { registerRoutes } from "./routes/index.js";
 
+const DEFAULT_PORT = 3001;
+
 async function buildServer() {
   const app = Fastify({
     logger: {
@@ -37,7 +39,8 @@ async function buildServer() {
 async function main() {
   const app = await buildServer();
   try {
-    await app.listen({ port: env.PORT, host: "0.0.0.0" });
+    const port = Number(process.env.PORT) || DEFAULT_PORT;
+    await app.listen({ port, host: "0.0.0.0" });
   } catch (err) {
     app.log.error(err);
     process.exit(1);

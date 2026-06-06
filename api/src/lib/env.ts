@@ -2,7 +2,6 @@ import { z } from "zod";
 import "dotenv/config";
 
 const envSchema = z.object({
-  PORT: z.coerce.number().int().positive().default(3001),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
 
@@ -12,7 +11,6 @@ const envSchema = z.object({
   SEED_ENCRYPTION_KEY: z.string().min(16),
 
   XRPL_NETWORK: z.string().default("wss://s.altnet.rippletest.net:51233"),
-  XRPL_FAUCET_URL: z.string().url().default("https://faucet.altnet.rippletest.net/accounts"),
 
   CORS_ORIGINS: z.string().default(""),
 });

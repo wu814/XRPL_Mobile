@@ -77,7 +77,7 @@ Sign in again, then on the Home tab use **Create Wallet** to add issuer, treasur
 When you connect this repo to Railway (see [`api/RAILWAY.md`](./api/RAILWAY.md)):
 
 1. Railway watches your GitHub repo and, on each push, runs `docker build` using [`api/Dockerfile`](./api/Dockerfile).
-2. It starts the resulting container with your env vars (Supabase secret key, encryption key, XRPL URLs, `CORS_ORIGINS`, etc.).
+2. It starts the resulting container with your env vars (Supabase secret key, encryption key, `XRPL_NETWORK`, `CORS_ORIGINS`, etc.).
 3. Railway assigns a public HTTPS URL (e.g. `https://your-app.up.railway.app`) and routes traffic to port `3001` inside the container.
 4. You set `EXPO_PUBLIC_API_URL` in `mobile/.env` to that URL so phones and simulators call the hosted API instead of `localhost`.
 

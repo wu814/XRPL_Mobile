@@ -15,7 +15,7 @@ import { AppSheet } from "@/src/components/ui/AppSheet";
 import { IconSymbol } from "@/src/components/ui/icon-symbol";
 import { CurrencyIconImage } from "@/src/features/shared/CurrencyIconImage";
 import { calculateEstimateOutput, calculateExactAMMInput } from "@/src/lib/ammCalculations";
-import { formatBalance } from "@/src/lib/prices";
+import { formatBalanceForCurrency } from "@/src/lib/prices";
 import { CurrencySelectorList } from "@/src/features/payments/CurrencySelectorSheet";
 
 interface SmartTradeSheetProps {
@@ -270,7 +270,8 @@ export function SmartTradeSheet({
               </View>
               <View className="mt-2 flex-row items-center justify-between">
                 <Text className="text-xs text-white/60">
-                  Balance: {formatBalance(balances[sellCurrency] ?? 0, 2)} {sellCurrency}
+                  Balance: {formatBalanceForCurrency(balances[sellCurrency] ?? 0, sellCurrency)}{" "}
+                  {sellCurrency}
                 </Text>
                 <TouchableOpacity
                   onPress={onMax}

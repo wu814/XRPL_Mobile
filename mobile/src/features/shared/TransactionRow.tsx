@@ -2,6 +2,8 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { ComponentProps } from "react";
 import { Linking, Text, TouchableOpacity, View } from "react-native";
 import type { ProcessedTransaction } from "@/src/api/transactions";
+import { useLpPairCurrencies } from "@/src/hooks/useLpPairCurrencies";
+import { formatCurrencyAmount } from "@/src/lib/formatters";
 
 type MaterialIconName = ComponentProps<typeof MaterialIcons>["name"];
 
@@ -54,6 +56,13 @@ const TX_STYLES: Record<string, TxStyle> = {
     color: "text-purple-400",
     bg: "bg-purple-500",
     icon: "link",
+    iconColor: "#ffffff",
+  },
+  amm_lp_trustline_set: {
+    label: "Set LP Trustline",
+    color: "text-cyan-400",
+    bg: "bg-cyan-600",
+    icon: "water-drop",
     iconColor: "#ffffff",
   },
   authorize_trustline: {
@@ -196,16 +205,44 @@ function DirectionBadge({ direction, type }: { direction: string; type: string }
   );
 }
 
+function LpTrustlinePoolLabel({ ammAccount }: { ammAccount: string }) {
+  const pair = useLpPairCurrencies(ammAccount);
+  const poolName = pair ? `${pair.currencyA} / ${pair.currencyB} LP` : "Liquidity pool LP";
+  return (
+    <>
+      <Text className="text-xs text-white/60">Pool: {poolName}</Text>
+      <Text className="font-mono text-xs text-white/40" numberOfLines={1}>
+        {ammAccount}
+      </Text>
+    </>
+  );
+}
+
+const AMOUNT_PART_RE = /^([\d.]+)\s+(\S+)$/;
+
+function formatAmountPart(part: string): string {
+  const match = part.trim().match(AMOUNT_PART_RE);
+  if (!match) return part.trim();
+  const [, numStr, curr] = match;
+  return formatCurrencyAmount(numStr, curr);
+}
+
 function formatAmount(amount: ProcessedTransaction["amount"], currency: string): string {
   if (amount === null || amount === undefined) return "—";
   if (typeof amount === "string") {
-    if (amount.includes("→") || amount.includes("+") || amount.includes(" ")) return amount;
-    if (currency === "XRP") return `${parseFloat(amount).toFixed(6)} XRP`;
-    if (!currency) return amount;
-    return `${parseFloat(amount).toFixed(6)} ${currency}`;
+    if (amount.includes("→")) {
+      return amount.split("→").map(formatAmountPart).join(" → ");
+    }
+    if (amount.includes("+")) {
+      return amount.split("+").map(formatAmountPart).join(" + ");
+    }
+    const match = amount.trim().match(AMOUNT_PART_RE);
+    if (match) return formatAmountPart(amount);
+    if (currency) return formatCurrencyAmount(amount, currency);
+    return amount;
   }
-  if (currency === "XRP") return `${amount.toFixed(6)} XRP`;
-  return `${amount} ${currency}`;
+  if (currency) return formatCurrencyAmount(amount, currency);
+  return String(amount);
 }
 
 export function TransactionRow({ tx }: { tx: ProcessedTransaction }) {
@@ -228,7 +265,9 @@ export function TransactionRow({ tx }: { tx: ProcessedTransaction }) {
               </Text>
             </View>
             <View>
-              {tx.counterparty ? (
+              {tx.direction === "amm_lp_trustline_set" && tx.counterparty ? (
+                <LpTrustlinePoolLabel ammAccount={tx.counterparty} />
+              ) : tx.counterparty ? (
                 <Text className="text-xs text-white/60" numberOfLines={1}>
                   {tx.direction === "sent"
                     ? "To: "
@@ -248,9 +287,6 @@ export function TransactionRow({ tx }: { tx: ProcessedTransaction }) {
         </View>
         <View className="ml-3 items-end">
           <Text className="font-medium text-white/85">{formatAmount(tx.amount, tx.currency)}</Text>
-          {tx.fee ? (
-            <Text className="text-[10px] text-white/40">Fee: {tx.fee} XRP</Text>
-          ) : null}
           <TouchableOpacity onPress={openExplorer} hitSlop={8}>
             <Text className="mt-1 text-xs text-primary">View ↗</Text>
           </TouchableOpacity>
