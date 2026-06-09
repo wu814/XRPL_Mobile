@@ -1,4 +1,4 @@
-import { dropsToXrp, formatXrp, xrpToDrops } from "./formatters";
+import { decodeCurrency, dropsToXrp, formatXrp, xrpToDrops } from "./formatters";
 import { availableCurrencies } from "./currencyIcon";
 import type { Amount, OfferExecution, OfferFlags } from "@/src/api/dex";
 
@@ -23,8 +23,9 @@ export function parseDexAsset(asset: unknown): ParsedDexAsset {
   }
   if (asset && typeof asset === "object") {
     const o = asset as { currency?: string; value?: string };
+    const raw = o.currency ?? "?";
     return {
-      currency: o.currency ?? "?",
+      currency: raw === "?" ? "?" : decodeCurrency(raw),
       value: Number(o.value ?? 0),
     };
   }
@@ -236,3 +237,64 @@ export function formatActiveOfferLeg(asset: unknown): string {
   if (p.currency === "XRP") return `${formatXrp(p.value, 4)} XRP`;
   return `${formatOfferQty(p.value)} ${p.currency}`;
 }
+
+const TF_SELL = 0x00080000;
+
+export function offerIsSell(offer: BookOfferRow): boolean {
+  const flags = Number(offer.flags ?? offer.Flags ?? 0);
+  if (flags & TF_SELL) return true;
+  const pays = parseDexAsset(offerLeg(offer, "pays"));
+  const gets = parseDexAsset(offerLeg(offer, "gets"));
+  const pair = canonicalDexPair(pays.currency, gets.currency);
+  return gets.currency === pair.base;
+}
+
+export function offerPairLabel(offer: BookOfferRow): string {
+  const pays = parseDexAsset(offerLeg(offer, "pays"));
+  const gets = parseDexAsset(offerLeg(offer, "gets"));
+  const pair = canonicalDexPair(pays.currency, gets.currency);
+  return `${pair.base}-${pair.quote}`;
+}
+
+export function offerTitle(offer: BookOfferRow): string {
+  const side = offerIsSell(offer) ? "sell" : "buy";
+  return `${offerPairLabel(offer)} Limit ${side}`;
+}
+
+export function offerBaseAsset(offer: BookOfferRow): ParsedDexAsset {
+  const leg = offerIsSell(offer) ? "gets" : "pays";
+  return parseDexAsset(offerLeg(offer, leg));
+}
+
+export function offerQuoteCurrency(offer: BookOfferRow): string {
+  const pays = parseDexAsset(offerLeg(offer, "pays"));
+  const gets = parseDexAsset(offerLeg(offer, "gets"));
+  const pair = canonicalDexPair(pays.currency, gets.currency);
+  return pair.quote;
+}
+
+export function offerLimitPrice(offer: BookOfferRow): number {
+  return offerIsSell(offer) ? sellOfferPrice(offer) : buyOfferPrice(offer);
+}
+
+export function formatOrderDate(rippleTime?: number | string | null): string | null {
+  if (rippleTime == null) return null;
+  const sec = typeof rippleTime === "string" ? Number(rippleTime) : rippleTime;
+  if (Number.isNaN(sec)) return null;
+  const unix = (sec + 946684800) * 1000;
+  return new Date(unix).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export function formatOrderAmount(asset: ParsedDexAsset): string {
+  if (asset.currency === "XRP") return `${formatXrp(asset.value, 6)} XRP`;
+  const formatted = asset.value.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  });
+  return `${formatted} ${asset.currency}`;
+}
+

@@ -53,7 +53,18 @@ export async function bookOffers(params: {
   return data as Array<Record<string, unknown>>;
 }
 
+export type PastDexOfferStatus = "filled" | "cancelled";
+
+export interface PastDexOffer {
+  hash: string;
+  date: number;
+  status: PastDexOfferStatus;
+  takerGets: unknown;
+  takerPays: unknown;
+  flags?: number;
+}
+
 export async function completedOffers(address: string) {
   const { data } = await apiClient.get(`/dex/offers/completed/${address}`);
-  return data as Array<Record<string, unknown>>;
+  return data as PastDexOffer[];
 }
